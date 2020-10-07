@@ -67,7 +67,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         ll = np.empty(M + 1)
 
         # calculate log likelihood ratios
-        ll[0] = log_clutter + logPND # log(lambda*(1-P_D))
+        ll[0] = log_clutter + log_PND # log(lambda*(1-P_D))
         for i in range(1,M+1):
             ll[i,:] =log_PD + self.state_filter.loglikelihood(Z[i,:],filter_state,sensor_state)
         return ll
@@ -86,7 +86,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         lls = self.loglikelihood_ratios(Z, filter_state, sensor_state=sensor_state)
         
         norm_constant = scipy.special.stat.logsumexp(lls)
-        normalised_ll = lls-summ
+        normalised_ll = lls-norm_constant
         beta = np.exp(normalised_ll)
         return beta
 
@@ -173,7 +173,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
     def init_filter_state(
         self,
         # need to have the type required by the specified state_filter
-        init_state: "ET_like",
+        init_state,
     ) -> ET:
         """Initialize a filter state to proper form."""
         return self.state_filter.init_filter_state(init_state)
