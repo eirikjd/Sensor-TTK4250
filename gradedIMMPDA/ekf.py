@@ -217,7 +217,7 @@ class EKF:
             *,
             sensor_state: Dict[str, Any] = None
         ) -> bool:
-         gate = (self.NIS(z,eststate,sensor_state) < gate_size_square)
-         return gate
+        gate = (self.NIS(z,eststate,sensor_state) < gate_size_square)
+        return gate
 
 # %% End
