@@ -12,16 +12,23 @@ def discrete_bayes(
     np.ndarray, np.ndarray
 ]:  # the new marginal and conditional: shapes=((m,), (m, n))
     """Swap which discrete variable is the marginal and conditional."""
-    joint = cond_pr * pr[:,None]
-    marginal = np.sum(joint, axis=0)
+
+    joint = cond_pr * pr[:, None]
+
+    marginal = joint.sum(axis=0)
 
     # Take care of rare cases of degenerate zero marginal,
-    conditional = joint/marginal[:,None]
+    conditional = np.divide(
+        joint,
+        marginal[None],
+        out=np.repeat(pr[:, None], joint.shape[1], 1),
+        where=marginal[None] > 0,
+    )
 
-    # flip axes?? (n, m) -> (m, n)
-    # conditional = conditional.T
+    # flip axes
+    conditional = conditional.T
 
-    # optional DEBUG
+    # DEBUG
     assert np.all(
         np.isfinite(conditional)
     ), f"NaN or inf in conditional in discrete bayes"
