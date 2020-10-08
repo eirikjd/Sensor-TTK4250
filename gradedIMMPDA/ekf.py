@@ -244,12 +244,12 @@ class EKF:
     def gate(
             self,
             z: np.ndarray,
-            eststate: GaussParams,
+            ekfstate: GaussParams,
             gate_size_square: float,
             *,
             sensor_state: Dict[str, Any] = None
         ) -> bool:
-        gate = (self.NIS(z,eststate,sensor_state=sensor_state) < gate_size_square)
+        gate = (self.NIS(z,ekfstate,sensor_state=sensor_state) < gate_size_square)
         #raise NotImplementedError  # TODO: remove this line when implemented
 
         return gate
