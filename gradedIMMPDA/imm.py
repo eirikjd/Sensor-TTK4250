@@ -232,7 +232,7 @@ class IMM(Generic[MT]):
             dtype=float,
         )
 
-        ll = np.average(mode_conditioned_ll, weights=immstate.weights) #??
+        ll = logsumexp(mode_conditioned_ll, b=immstate.weights)
         # weighted average of likelihoods (not log!)
 
         assert np.isfinite(ll), "IMM.loglikelihood: ll not finite"
@@ -264,7 +264,6 @@ class IMM(Generic[MT]):
             - reduce self.filter[s].reduce_mixture for each s
         """
 
-        raise NotImplementedError  # TODO remove this when done
         # extract probabilities as array
         ## eg. association weights/beta: Pr(a)
         weights = immstate_mixture.weights
@@ -274,7 +273,7 @@ class IMM(Generic[MT]):
         )
 
         # flip conditioning order with Bayes to get Pr(s), and Pr(a | s)
-        mode_prob, mode_conditioned_component_prob = discretebayes.discretebayes(weights,component_conditioned_mode_prob)
+        mode_prob, mode_conditioned_component_prob = discretebayes.discrete_bayes(weights,component_conditioned_mode_prob)
 
         # We need to gather all the state parameters from the associations for mode s into a
         # single list in order to reduce it to a single parameter set.
@@ -282,11 +281,13 @@ class IMM(Generic[MT]):
         # into a single list and append the result of self.filters[s].reduce_mixture
         # The mode s for association j should be available as imm_mixture.components[j].components[s]
 
-        mode_states: List[GaussParams] =
-                [
-                    fs.reduce_mixture(immstate_mixture.components[j].components[s])
-                    for fs, modestate_s in zip(self.filters, immstate.components)
-                ]
+        comps_per_mode = zip(*[comp.components for comp in immstate_mixture.components])
+
+        mode_states: List[GaussParams] =[
+                                            fs.reduce_mixture(MixtureParameters(mode_s_cond_comb_prob, mode_s_comp))
+                                            for fs, mode_s_cond_comb_prob, mode_s_comp in zip
+                                            (self.filters, mode_conditioned_component_prob, comps_per_mode)
+                                        ]
 
         immstate_reduced = MixtureParameters(mode_prob, mode_states)
 

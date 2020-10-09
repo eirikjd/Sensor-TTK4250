@@ -27,7 +27,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         """Predict state estimate Ts time units ahead"""
         return self.state_filter.predict(filter_state,Ts)
 
-    def gate(
+    def gated(
         self,
         # measurements of shape=(M, m)=(#measurements, dim)
         Z: np.ndarray,
@@ -39,7 +39,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         """Gate/validate measurements: akin to (z-h(x))'S^(-1)(z-h(x)) <= g^2."""
         M = Z.shape[0]
         g_squared = self.gate_size ** 2
-        
+
         gated = np.zeros((M,), dtype=bool)
         # gated lag array
         #loop gate for hvert element
@@ -56,7 +56,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         sensor_state: Optional[Dict[str, Any]] = None,
     ) -> np.ndarray:  # shape=(M + 1,), first element for no detection
         """ Calculates the posterior event loglikelihood ratios."""
- 
+
         M = Z.shape[0]
 
         log_PD = np.log(self.PD)
@@ -68,8 +68,8 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
         # calculate log likelihood ratios
         ll[0] = log_clutter + log_PND # log(lambda*(1-P_D))
-        for i in range(1,M+1):
-            ll[i,:] =log_PD + self.state_filter.loglikelihood(Z[i,:],filter_state,sensor_state)
+        for i in range(1,M):
+            ll[i] =log_PD + self.state_filter.loglikelihood(Z[i,:],filter_state,sensor_state=sensor_state)
         return ll
 
     def association_probabilities(
@@ -84,8 +84,8 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
         # log likelihoods
         lls = self.loglikelihood_ratios(Z, filter_state, sensor_state=sensor_state)
-        
-        norm_constant = scipy.special.stat.logsumexp(lls)
+
+        norm_constant = scipy.special.logsumexp(lls)
         normalised_ll = lls-norm_constant
         beta = np.exp(normalised_ll)
         return beta
