@@ -118,21 +118,21 @@ if play_movie:
 
 
 # sensor
-sigma_z = 10
+sigma_z = 12
 clutter_intensity = 1e-5
 PD = 0.9
-gate_size = 3
+gate_size = 5
 
 # dynamic models
-sigma_a_CV = 0.2
-sigma_a_CT = 0.5
-sigma_a_CV_high = 5
+sigma_a_CV = 0.5
+sigma_a_CT = 0.01
+sigma_a_CV_high = 10
 sigma_omega = 0.3
 
 # markov chain
-PI11 = 0.9  # CV -> CV
-PI12 = 0.05  # CV -> CT
-PI13 = 0.05  # CV -> CV_high
+PI11 = 0.7  # CV -> CV
+PI12 = 0.15  # CV -> CT
+PI13 = 0.15 # CV -> CV_high
 
 PI21 = 0.1  # CT -> CV
 PI22 = 0.8  # CT -> CT
@@ -143,9 +143,9 @@ PI32 = 0.1  # CV_high -> CT
 PI33 = 0.8  # CV_high -> CV_high
 
 
-p10 = 0.7  # initvalue for mode probabilities
-p11 = 0.1
-p12 = 0.2
+p10 = 0.25  # initvalue for mode probabilities
+p11 = 0.25
+p12 = 0.5
 
 PI = np.array([[PI11, PI12, PI13], [PI21, PI22, PI23], [PI31, PI32, PI33]])
 assert np.allclose(np.sum(PI, axis=1), 1), "rows of PI must sum to 1"
@@ -272,11 +272,11 @@ print(f"ANEESvel = {ANEESvel:.2f} with CI = [{CI2K[0]:.2f}, {CI2K[1]:.2f}]")
 print(f"ANEES = {ANEES:.2f} with CI = [{CI4K[0]:.2f}, {CI4K[1]:.2f}]")
 
 # errors
-fig5, axs5 = plt.subplots(2, num=5, clear=True)
-axs5[0].plot(np.arange(K) * T_mean, np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1))
-axs5[0].set_ylabel("position error")
+# fig5, axs5 = plt.subplots(2, num=5, clear=True)
+# axs5[0].plot(np.arange(K) * T_mean, np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1))
+# axs5[0].set_ylabel("position error")
 
-axs5[1].plot(np.arange(K) * T_mean, np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1))
-axs5[1].set_ylabel("velocity error")
+# axs5[1].plot(np.arange(K) * T_mean, np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1))
+# axs5[1].set_ylabel("velocity error")
 
 plt.show()
