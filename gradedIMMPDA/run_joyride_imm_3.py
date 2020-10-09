@@ -245,6 +245,7 @@ axs3[1].plot(np.arange(K) * T_mean, prob_hat)
 axs3[1].set_ylim([0, 1])
 axs3[1].set_ylabel("mode probability")
 axs3[1].set_xlabel("time")
+axs3[1].legend(["CV", "CT", "CV_high"])
 
 # NEES
 fig4, axs4 = plt.subplots(3, sharex=True, num=4, clear=True)
