@@ -27,7 +27,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         """Predict state estimate Ts time units ahead"""
         return self.state_filter.predict(filter_state,Ts)
 
-    def gated(
+    def gate(
         self,
         # measurements of shape=(M, m)=(#measurements, dim)
         Z: np.ndarray,
@@ -68,8 +68,12 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
         # calculate log likelihood ratios
         ll[0] = log_clutter + log_PND # log(lambda*(1-P_D))
-        for i in range(1,M):
-            ll[i] =log_PD + self.state_filter.loglikelihood(Z[i,:],filter_state,sensor_state=sensor_state)
+        ll[1:] = [
+            log_PD + self.state_filter.loglikelihood(Z[i,:], filter_state, sensor_state=sensor_state) for i in range(Z.shape[0])
+        ]
+
+        # for i in range(1,M):
+        #     ll[i] =log_PD + self.state_filter.loglikelihood(Z[i,:],filter_state,sensor_state=sensor_state)
         return ll
 
     def association_probabilities(
@@ -132,7 +136,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         Gate -> association probabilities -> conditional update -> reduce mixture.
         """
         # remove the not gated measurements from consideration
-        gated = self.gated(Z,filter_state)
+        gated = self.gate(Z,filter_state)
         Zg = Z[gated]
 
         # find association probabilities
