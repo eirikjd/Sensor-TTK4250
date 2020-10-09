@@ -124,23 +124,22 @@ PD = 0.9
 gate_size = 5
 
 # dynamic models
-sigma_a_CV = 0.05
-sigma_a_CT = 0.05
-sigma_omega = 0.03
-
+sigma_a_CV = 0.5
+sigma_a_CT = 0.5
+sigma_omega = 0.3
 
 # markov chain
-PI11 = 0.9
-PI22 = 0.9
+PI11 = 0.8
+PI22 = 0.6
 
-p10 = 0.9  # initvalue for mode probabilities
+p10 = 0.95  # initvalue for mode probabilities
 
 PI = np.array([[PI11, (1 - PI11)], [(1 - PI22), PI22]])
 assert np.allclose(np.sum(PI, axis=1), 1), "rows of PI must sum to 1"
 
-mean_init = np.array(Xgt[0])
+mean_init = Xgt[0]
 mean_init = np.append(mean_init, 0.1)
-cov_init = np.diag([2*sigma_z**2, 2*sigma_z, 3, 3, 0.1]) ** 2  # THIS WILL NOT BE GOOD
+cov_init = np.diag([sigma_z, sigma_z, 3, 3, 0.1]) ** 2
 mode_probabilities_init = np.array([p10, (1 - p10)])
 mode_states_init = GaussParams(mean_init, cov_init)
 init_imm_state = MixtureParameters(mode_probabilities_init, [mode_states_init] * 2)
