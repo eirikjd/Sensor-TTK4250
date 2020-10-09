@@ -73,12 +73,11 @@ except Exception as e:
 filename_to_load = "data_joyride.mat"
 loaded_data = scipy.io.loadmat(filename_to_load)
 K = loaded_data["K"].item()
-Ts = loaded_data["Ts"].squeeze()
+Ts = loaded_data["Ts"].ravel()
 Xgt = loaded_data["Xgt"].T
 Z = [zk.T for zk in loaded_data["Z"].ravel()]
-
-
-# plot measurements close to the trajectory
+T_mean = np.mean(Ts)
+# true_association = loaded_data["ownship"].ravel()
 
 # plot measurements close to the trajectory
 fig1, ax1 = plt.subplots(num=1, clear=True)
@@ -174,10 +173,9 @@ tracker_update_list = []
 tracker_predict_list = []
 tracker_estimate_list = []
 # estimate
-Ts = np.insert(Ts, 0,0, axis=0)
-
-for k, (Zk, x_true_k, Tsk) in enumerate(zip(Z, Xgt, Ts)):
-    tracker_predict = tracker.predict(tracker_update, Tsk)
+# Ts = np.insert(Ts, 0, 0)
+for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
+    tracker_predict = tracker.predict(tracker_update, Ts[k-1])
     tracker_update = tracker.update(Zk, tracker_predict)
 
     # You can look at the prediction estimate as well
@@ -229,30 +227,30 @@ axs3[0].set_title(
 )
 axs3[0].axis("equal")
 # probabilities
-axs3[1].plot(np.arange(K) * Ts, prob_hat)
+axs3[1].plot(np.arange(K) * T_mean, prob_hat)
 axs3[1].set_ylim([0, 1])
 axs3[1].set_ylabel("mode probability")
 axs3[1].set_xlabel("time")
 
 # NEES
-# fig4, axs4 = plt.subplots(3, sharex=True, num=4, clear=True)
-# axs4[0].plot(np.arange(K) * Ts, NEESpos)
-# axs4[0].plot([0, (K - 1) * Ts], np.repeat(CI2[None], 2, 0), "--r")
-# axs4[0].set_ylabel("NEES pos")
-# inCIpos = np.mean((CI2[0] <= NEESpos) * (NEESpos <= CI2[1]))
-# axs4[0].set_title(f"{inCIpos*100:.1f}% inside {confprob*100:.1f}% CI")
+fig4, axs4 = plt.subplots(3, sharex=True, num=4, clear=True)
+axs4[0].plot(np.arange(K) * T_mean, NEESpos)
+axs4[0].plot([0, (K - 1) * T_mean], np.repeat(CI2[None], 2, 0), "--r")
+axs4[0].set_ylabel("NEES pos")
+inCIpos = np.mean((CI2[0] <= NEESpos) * (NEESpos <= CI2[1]))
+axs4[0].set_title(f"{inCIpos*100:.1f}% inside {confprob*100:.1f}% CI")
 
-# axs4[1].plot(np.arange(K) * Ts, NEESvel)
-# axs4[1].plot([0, (K - 1) * Ts], np.repeat(CI2[None], 2, 0), "--r")
-# axs4[1].set_ylabel("NEES vel")
-# inCIvel = np.mean((CI2[0] <= NEESvel) * (NEESvel <= CI2[1]))
-# axs4[1].set_title(f"{inCIvel*100:.1f}% inside {confprob*100:.1f}% CI")
+axs4[1].plot(np.arange(K) * T_mean, NEESvel)
+axs4[1].plot([0, (K - 1) * T_mean], np.repeat(CI2[None], 2, 0), "--r")
+axs4[1].set_ylabel("NEES vel")
+inCIvel = np.mean((CI2[0] <= NEESvel) * (NEESvel <= CI2[1]))
+axs4[1].set_title(f"{inCIvel*100:.1f}% inside {confprob*100:.1f}% CI")
 
-# axs4[2].plot(np.arange(K) * Ts, NEES)
-# axs4[2].plot([0, (K - 1) * Ts], np.repeat(CI4[None], 2, 0), "--r")
-# axs4[2].set_ylabel("NEES")
-# inCI = np.mean((CI2[0] <= NEES) * (NEES <= CI2[1]))
-# axs4[2].set_title(f"{inCI*100:.1f}% inside {confprob*100:.1f}% CI")
+axs4[2].plot(np.arange(K) * T_mean, NEES)
+axs4[2].plot([0, (K - 1) * T_mean], np.repeat(CI4[None], 2, 0), "--r")
+axs4[2].set_ylabel("NEES")
+inCI = np.mean((CI2[0] <= NEES) * (NEES <= CI2[1]))
+axs4[2].set_title(f"{inCI*100:.1f}% inside {confprob*100:.1f}% CI")
 
 print(f"ANEESpos = {ANEESpos:.2f} with CI = [{CI2K[0]:.2f}, {CI2K[1]:.2f}]")
 print(f"ANEESvel = {ANEESvel:.2f} with CI = [{CI2K[0]:.2f}, {CI2K[1]:.2f}]")
@@ -260,10 +258,10 @@ print(f"ANEES = {ANEES:.2f} with CI = [{CI4K[0]:.2f}, {CI4K[1]:.2f}]")
 
 # errors
 fig5, axs5 = plt.subplots(2, num=5, clear=True)
-axs5[0].plot(np.arange(K) * Ts, np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1))
+axs5[0].plot(np.arange(K) * T_mean, np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1))
 axs5[0].set_ylabel("position error")
 
-axs5[1].plot(np.arange(K) * Ts, np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1))
+axs5[1].plot(np.arange(K) * T_mean, np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1))
 axs5[1].set_ylabel("velocity error")
 
 plt.show()
