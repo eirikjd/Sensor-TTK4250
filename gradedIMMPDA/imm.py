@@ -226,8 +226,8 @@ class IMM(Generic[MT]):
 
         mode_conditioned_ll = np.fromiter(
             (
-                None  # TODO: your state filter (fs under) should be able to calculate the mode conditional log likelihood at z from modestate_s
-                for fs, modestate_s in zip(self.filters, immstate.components)
+                None  # TODO: your state filter (fs under) should be able to calculate the mode conditional #log likelihood at z from modestate_s
+                for fs, modestate_s in zip(self.filters, immstate.components) #liste med filter, mixture parameters
             ),
             dtype=float,
         )
@@ -273,7 +273,7 @@ class IMM(Generic[MT]):
         )
 
         # flip conditioning order with Bayes to get Pr(s), and Pr(a | s)
-        mode_prob, mode_conditioned_component_prob = None  # TODO
+        mode_prob, mode_conditioned_component_prob = discretebayes.discretebayes(weights,component_conditioned_mode_prob)
 
         # We need to gather all the state parameters from the associations for mode s into a
         # single list in order to reduce it to a single parameter set.
