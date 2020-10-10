@@ -79,19 +79,19 @@ Z = [zk.T for zk in loaded_data["Z"].ravel()]
 T_mean = np.mean(Ts)
 # true_association = loaded_data["ownship"].ravel()
 
-# plot measurements close to the trajectory
-# fig1, ax1 = plt.subplots(num=1, clear=True)
+#plot measurements close to the trajectory
+fig1, ax1 = plt.subplots(num=1, clear=True)
 
-# Z_plot_data = np.empty((0, 2), dtype=float)
-# plot_measurement_distance = 45
-# for Zk, xgtk in zip(Z, Xgt):
-#     to_plot = np.linalg.norm(Zk - xgtk[None:2], axis=1) <= plot_measurement_distance
-#     Z_plot_data = np.append(Z_plot_data, Zk[to_plot], axis=0)
+Z_plot_data = np.empty((0, 2), dtype=float)
+plot_measurement_distance = 45
+for Zk, xgtk in zip(Z, Xgt):
+    to_plot = np.linalg.norm(Zk - xgtk[None:2], axis=1) <= plot_measurement_distance
+    Z_plot_data = np.append(Z_plot_data, Zk[to_plot], axis=0)
 
-# ax1.scatter(*Z_plot_data.T, color="C1")
-# ax1.plot(*Xgt.T[:2], color="C0", linewidth=1.5)
-# ax1.set_title("True trajectory and the nearby measurements")
-# plt.show(block=False)
+ax1.scatter(*Z_plot_data.T, color="C1")
+ax1.plot(*Xgt.T[:2], color="C0", linewidth=1.5)
+ax1.set_title("True trajectory and the nearby measurements")
+plt.show(block=False)
 
 # %% play measurement movie. Remember that you can cross out the window
 play_movie = False
@@ -124,28 +124,28 @@ PD = 0.9
 gate_size = 5
 
 # dynamic models
-sigma_a_CV = 0.5
-sigma_a_CT = 0.01
-sigma_a_CV_high = 10
+sigma_a_CV = 0.2 
+sigma_a_CT = 0.05   
+sigma_a_CV_high = 5 
 sigma_omega = 0.3
 
 # markov chain
-PI11 = 0.7  # CV -> CV
-PI12 = 0.15  # CV -> CT
-PI13 = 0.15 # CV -> CV_high
+PI11 = 0.95  # CV -> C
+PI12 = 0.025  # CV -> CT
+PI13 = 0.025 # CV -> CV_high
 
-PI21 = 0.1  # CT -> CV
-PI22 = 0.8  # CT -> CT
-PI23 = 0.1  # CT -> CV_high
+PI21 = 0.025  # CT -> CV
+PI22 = 0.95  # CT -> CT
+PI23 = 0.025  # CT -> CV_high
 
-PI31 = 0.1  # CV_high -> CV
-PI32 = 0.1  # CV_high -> CT
-PI33 = 0.8  # CV_high -> CV_high
+PI31 = 0.025  # CV_high -> CV
+PI32 = 0.025  # CV_high -> CT
+PI33 = 0.95  # CV_high -> CV_high
 
 
-p10 = 0.25  # initvalue for mode probabilities
-p11 = 0.25
-p12 = 0.5
+p10 = 0.8  # initvalue for mode probabilities (starter ikke så ofte med en sving,men vet ikke når det dukker opp)
+p11 = 0.1
+p12 = 0.1
 
 PI = np.array([[PI11, PI12, PI13], [PI21, PI22, PI23], [PI31, PI32, PI33]])
 assert np.allclose(np.sum(PI, axis=1), 1), "rows of PI must sum to 1"
