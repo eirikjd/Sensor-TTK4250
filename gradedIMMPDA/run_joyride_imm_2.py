@@ -120,21 +120,21 @@ if play_movie:
 
 
 # sensor
-sigma_z = 10
+sigma_z = 12
 clutter_intensity = 1e-5
 PD = 0.9
 gate_size = 5
 
 # dynamic models
-sigma_a_CV = 0.5
-sigma_a_CT = 0.5
+sigma_a_CV = 0.2
+sigma_a_CT = 0.05
 sigma_omega = 0.3
 
 # markov chain
-PI11 = 0.8
-PI22 = 0.6
+PI11 = 0.95
+PI22 = 0.95
 
-p10 = 0.95  # initvalue for mode probabilities
+p10 = 0.8 # initvalue for mode probabilities
 
 PI = np.array([[PI11, (1 - PI11)], [(1 - PI22), PI22]])
 assert np.allclose(np.sum(PI, axis=1), 1), "rows of PI must sum to 1"
