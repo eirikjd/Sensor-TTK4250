@@ -68,6 +68,7 @@ except Exception as e:
         }
     )
 
+plot_save_path = "./plots/joyride_imm_3/"
 
 # %% load data and plot
 filename_to_load = "data_joyride.mat"
@@ -91,7 +92,10 @@ for Zk, xgtk in zip(Z, Xgt):
 ax1.scatter(*Z_plot_data.T, color="C1")
 ax1.plot(*Xgt.T[:2], color="C0", linewidth=1.5)
 ax1.set_title("True trajectory and the nearby measurements")
-plt.show(block=False)
+# plt.show(block=False)
+plt.savefig(plot_save_path + "trajectory.pdf", format="pdf")
+
+
 
 # %% play measurement movie. Remember that you can cross out the window
 play_movie = False
@@ -124,9 +128,9 @@ PD = 0.9
 gate_size = 5
 
 # dynamic models
-sigma_a_CV = 0.2 
-sigma_a_CT = 0.05   
-sigma_a_CV_high = 5 
+sigma_a_CV = 0.2
+sigma_a_CT = 0.05
+sigma_a_CV_high = 5
 sigma_omega = 0.3
 
 # markov chain
@@ -233,7 +237,7 @@ ANEES = np.mean(NEES)
 
 # %% plots
 # trajectory
-fig3, axs3 = plt.subplots(1, 2, num=3, clear=True)
+fig3, axs3 = plt.subplots(1, 2, num=3, clear=True, figsize=(10,5))
 axs3[0].plot(*x_hat.T[:2], label=r"$\hat x$")
 axs3[0].plot(*Xgt.T[:2], label="$x$")
 axs3[0].set_title(
@@ -247,8 +251,11 @@ axs3[1].set_ylabel("mode probability")
 axs3[1].set_xlabel("time")
 axs3[1].legend(["CV", "CT", "CV_high"])
 
+plt.savefig(plot_save_path + "mode_probs.pdf", format="pdf")
+
+
 # NEES
-fig4, axs4 = plt.subplots(3, sharex=True, num=4, clear=True)
+fig4, axs4 = plt.subplots(3, sharex=True, num=4, clear=True, figsize=(10,10))
 axs4[0].plot(np.arange(K) * T_mean, NEESpos)
 axs4[0].plot([0, (K - 1) * T_mean], np.repeat(CI2[None], 2, 0), "--r")
 axs4[0].set_ylabel("NEES pos")
@@ -270,13 +277,16 @@ axs4[2].set_title(f"{inCI*100:.1f}% inside {confprob*100:.1f}% CI")
 print(f"ANEESpos = {ANEESpos:.2f} with CI = [{CI2K[0]:.2f}, {CI2K[1]:.2f}]")
 print(f"ANEESvel = {ANEESvel:.2f} with CI = [{CI2K[0]:.2f}, {CI2K[1]:.2f}]")
 print(f"ANEES = {ANEES:.2f} with CI = [{CI4K[0]:.2f}, {CI4K[1]:.2f}]")
+plt.savefig(plot_save_path + "NIS_NEES_CI.pdf", format="pdf")
 
 # errors
-# fig5, axs5 = plt.subplots(2, num=5, clear=True)
-# axs5[0].plot(np.arange(K) * T_mean, np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1))
-# axs5[0].set_ylabel("position error")
+fig5, axs5 = plt.subplots(2, num=5, clear=True, figsize=(10,10))
+axs5[0].plot(np.arange(K) * T_mean, np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1))
+axs5[0].set_ylabel("position error")
 
-# axs5[1].plot(np.arange(K) * T_mean, np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1))
-# axs5[1].set_ylabel("velocity error")
+axs5[1].plot(np.arange(K) * T_mean, np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1))
+axs5[1].set_ylabel("velocity error")
 
-plt.show()
+plt.savefig(plot_save_path + "errors.pdf", format="pdf")
+
+# plt.show()
