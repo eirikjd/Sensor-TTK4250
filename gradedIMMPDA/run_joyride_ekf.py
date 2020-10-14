@@ -226,6 +226,8 @@ ANEES = np.mean(NEES)
 fig3, axs3 = plt.subplots(num=3, clear=True, figsize=(10,5))
 axs3.plot(*x_hat.T[:2], label=r"$\hat x$")
 axs3.plot(*Xgt.T[:2], label="$x$")
+#axs3.legend(["CV", "CT", "CV_high"])
+
 # axs3.set_title(
 #     f"RMSE(pos, vel) = ({posRMSE:.3f}, {velRMSE:.3f})\npeak_dev(pos, vel) = ({peak_pos_deviation:.3f}, {peak_vel_deviation:.3f})"
 # )
