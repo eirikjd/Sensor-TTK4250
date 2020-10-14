@@ -198,8 +198,8 @@ x_hat = np.array([est.mean for est in tracker_estimate_list])
 prob_hat = np.array([upd.weights for upd in tracker_update_list])
 
 # calculate a performance metrics
-poserr = np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=0)
-velerr = np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=0)
+poserr = np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1)
+velerr = np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1)
 posRMSE = np.sqrt(
     np.mean(poserr ** 2)
 )  # not true RMSE (which is over monte carlo simulations)
@@ -257,7 +257,7 @@ axs4[1].set_title(f"{inCIvel*100:.1f}% inside {confprob*100:.1f}% CI")
 axs4[2].plot(np.arange(K) * Ts, NEES)
 axs4[2].plot([0, (K - 1) * Ts], np.repeat(CI4[None], 2, 0), "--r")
 axs4[2].set_ylabel("NEES")
-inCI = np.mean((CI2[0] <= NEES) * (NEES <= CI2[1]))
+inCI = np.mean((CI4[0] <= NEES) * (NEES <= CI4[1]))
 axs4[2].set_title(f"{inCI*100:.1f}% inside {confprob*100:.1f}% CI")
 
 plt.savefig(plot_save_path + "NIS_NES_CI.pdf", format="pdf")
