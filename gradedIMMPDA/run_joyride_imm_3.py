@@ -287,6 +287,9 @@ axs5[0].set_ylabel("position error")
 axs5[1].plot(np.arange(K) * T_mean, np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1))
 axs5[1].set_ylabel("velocity error")
 
+print(np.average(np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1)))
+
+
 plt.savefig(plot_save_path + "errors.pdf", format="pdf")
 
 # plt.show()
