@@ -126,9 +126,19 @@ PD = 0.9
 gate_size = 5
 
 # dynamic models
-sigma_a_CV = 0.2
-sigma_a_CT = 0.05
-sigma_omega = 0.3
+sigma_a_CV = 1
+sigma_a_CT = 1
+sigma_omega = 2
+# =============================================================================
+# sigma_a_CV = 0.05
+# sigma_a_CT = 0.05
+# sigma_omega = 0.03
+# =============================================================================
+# =============================================================================
+# sigma_a_CV = 0.5
+# sigma_a_CT = 1.2
+# sigma_omega = 1
+# =============================================================================
 
 # markov chain
 PI11 = 0.95
@@ -235,6 +245,16 @@ axs3[1].set_xlabel("time")
 axs3[1].legend(["CV", "CT"])
 
 plt.savefig(plot_save_path + "mode_probs.pdf", format="pdf")
+
+#Only trajectory
+fig6, axs6 = plt.subplots(num=1, clear=True)
+axs6.plot(*x_hat.T[:2], label=r"$\hat x$")
+axs6.plot(*Xgt.T[:2], label="$x$")
+axs6.legend(["$\hat x$", "x"])
+axs6.set_title("Trajectory")
+plt.savefig(plot_save_path + "traj.pdf", format="pdf")
+
+
 
 
 # NEES

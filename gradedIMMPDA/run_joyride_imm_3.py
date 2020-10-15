@@ -79,7 +79,6 @@ Xgt = loaded_data["Xgt"].T
 Z = [zk.T for zk in loaded_data["Z"].ravel()]
 T_mean = np.mean(Ts)
 # true_association = loaded_data["ownship"].ravel()
-
 #plot measurements close to the trajectory
 fig1, ax1 = plt.subplots(num=1, clear=True)
 
@@ -130,8 +129,9 @@ gate_size = 5
 # dynamic models
 sigma_a_CV = 0.2
 sigma_a_CT = 0.05
+sigma_omega = 0.03
 sigma_a_CV_high = 5
-sigma_omega = 0.3
+
 
 # markov chain
 PI11 = 0.95  # CV -> C
@@ -156,7 +156,7 @@ assert np.allclose(np.sum(PI, axis=1), 1), "rows of PI must sum to 1"
 
 mean_init = Xgt[0]
 mean_init = np.append(mean_init, 0.1)
-cov_init = np.diag([sigma_z, sigma_z, 1, 1, 0.1]) ** 2
+cov_init = np.diag([sigma_z*10, sigma_z*10, 0.1, 0.1, 0.1]) ** 2
 mode_probabilities_init = np.array([p10, p11, p12])
 mode_states_init = GaussParams(mean_init, cov_init)
 init_imm_state = MixtureParameters(mode_probabilities_init, [mode_states_init] * 3)

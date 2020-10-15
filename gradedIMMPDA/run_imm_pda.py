@@ -126,7 +126,7 @@ if play_movie:
 # sensor
 sigma_z = 3
 clutter_intensity = 1e-3
-PD = 0.9
+PD = 0.95
 gate_size = 3
 
 # dynamic models
@@ -136,8 +136,8 @@ sigma_omega = 0.03
 
 
 # markov chain
-PI11 = 0.9
-PI22 = 0.9
+PI11 = 0.95
+PI22 = 0.95
 
 p10 = 0.9  # initvalue for mode probabilities
 
