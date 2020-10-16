@@ -120,15 +120,15 @@ if play_movie:
 
 
 # sensor
-sigma_z = 12
+sigma_z = 20
 clutter_intensity = 1e-5
 PD = 0.9
 gate_size = 5
 
 # dynamic models
 sigma_a_CV = 1
-sigma_a_CT = 1
-sigma_omega = 2
+sigma_a_CT = 0.8
+sigma_omega = 0.2
 # =============================================================================
 # sigma_a_CV = 0.05
 # sigma_a_CT = 0.05
@@ -289,6 +289,8 @@ axs5[0].set_ylabel("position error")
 
 axs5[1].plot(np.arange(K) * T_mean, np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1))
 axs5[1].set_ylabel("velocity error")
+print(np.average(np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1)))
+
 
 plt.savefig(plot_save_path + "errors.pdf", format="pdf")
 
