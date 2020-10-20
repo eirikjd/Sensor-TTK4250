@@ -1,4 +1,5 @@
 *.pyc
-*.vscode/*
+**/.vscode/*
 pdf/
+*.pdf
 gradedIMMPDA/Code_hand_in_Group26.zip
