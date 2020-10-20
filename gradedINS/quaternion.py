@@ -36,7 +36,9 @@ def quaternion_product(ql: np.ndarray, qr: np.ndarray) -> np.ndarray:
             f"utils.quaternion_product: Quaternion multiplication error, right quaternion wrong shape: {qr.shape}"
         )
 
-    quaternion = np.zeros((4,))  # TODO: Implement quaternion product
+    # TODO: Muligens ikke riktig?
+    mellomsteg = np.block([[0, -epsilon_left.T], [epsilon_left, utils.cross_product_matrix(epsilon_left)]])
+    quaternion = (eta_left * np.eye(4) + mellomsteg) @ q_right
 
     # Ensure result is of correct shape
     quaternion = quaternion.ravel()
@@ -73,7 +75,8 @@ def quaternion_to_rotation_matrix(
             f"quaternion.quaternion_to_rotation_matrix: Quaternion to multiplication error, quaternion shape incorrect: {quaternion.shape}"
         )
 
-    R = np.zeros((3, 3))  # TODO: Convert from quaternion to rotation matrix
+    S = utils.cross_product_matrix(epsilon)
+    R = np.eye(3) + 2*eta * S + 2*S @ S
 
     if debug:
         assert np.allclose(
@@ -102,10 +105,15 @@ def quaternion_to_euler(quaternion: np.ndarray) -> np.ndarray:
 
     quaternion_squared = quaternion ** 2
 
-    raise NotImplementedError  # TODO: remove when done
-    phi = 0  # TODO: Convert from quaternion to euler angles
-    theta = 0  # TODO: Convert from quaternion to euler angles
-    psi = 0  # TODO: Convert from quaternion to euler angles
+    n = quaternion[0]
+    e1 = quaternion[1]
+    e2 = quaternion[2]
+    e3 = quaternion[3]
+
+
+    phi = np.arctan2(2*(e3*e1 + n*e1), n**2 - e1**2 - e2**2 + e3**2)
+    theta = np.arcsin(2*(n*e2 + e1*e3))
+    psi = np.arctan2(2*(e1*e2 + n*e3), n**2 + e1**2 - e2**2 - e3**2)
 
     euler_angles = np.array([phi, theta, psi])
     assert euler_angles.shape == (

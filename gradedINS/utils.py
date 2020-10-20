@@ -6,8 +6,15 @@ def cross_product_matrix(n: ArrayLike, debug: bool = True) -> np.ndarray:
     assert len(n) == 3, f"utils.cross_product_matrix: Vector not of length 3: {n}"
     vector = np.array(n, dtype=float).reshape(3)
 
-    S = np.zeros((3, 3))  # TODO: Create the cross product matrix
-    raise NotImplementedError
+
+    n1 = vector[0]
+    n2 = vector[1]
+    n3 = vector[2]
+
+    S = np.array([[0, -n3, n2],
+                  [n3, 0, -n1],
+                  [-n2, n1, 0]])
+
     if debug:
         assert S.shape == (
             3,
