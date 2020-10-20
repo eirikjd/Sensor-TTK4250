@@ -23,6 +23,8 @@ VEL_IDX = CatSlice(start=3, stop=6)
 ATT_IDX = CatSlice(start=6, stop=10)
 ACC_BIAS_IDX = CatSlice(start=10, stop=13)
 GYRO_BIAS_IDX = CatSlice(start=13, stop=16)
+N_slice = CatSlice(start=0, stop=3)
+
 
 ERR_ATT_IDX = CatSlice(start=6, stop=9)
 ERR_ACC_BIAS_IDX = CatSlice(start=9, stop=12)
@@ -114,22 +116,21 @@ class ESKF:
 
         R = quaternion_to_rotation_matrix(quaternion, debug=self.debug)
 
-        position_prediction = np.zeros((3,))  # TODO: Calculate predicted position
-        velocity_prediction = np.zeros((3,))  # TODO: Calculate predicted velocity
-
+        position_prediction = position + Ts*velocity + (Ts**2*R@acceleration)/2
+        velocity_prediction = velocity +Ts*R@acceleration 
+        
+        vec_inc = Ts*omega
+        vec_inc_norm = la.norm(vec_inc)
         quaternion_prediction = np.array(
-            [1, 0, 0, 0]
-        )  # TODO: Calculate predicted quaternion
+            np.cross(quaternion,
+                     np.array([[np.cos(vec_inc_norm/2), (vec_inc*np.sin(vec_inc_norm/2))/vec_inc_norm]]).T)
+        )  # dobbeltsjekk
 
         # Normalize quaternion
-        quaternion_prediction = quaternion_prediction  # TODO: Normalize
+        quaternion_prediction = quaternion_prediction/la.norm(quaternion_prediction) 
 
-        acceleration_bias_prediction = np.zeros(
-            (3,)
-        )  # TODO: Calculate predicted acceleration bias
-        gyroscope_bias_prediction = np.zeros(
-            (3,)
-        )  # TODO: Calculate predicted gyroscope bias
+        acceleration_bias_prediction = acceleration_bias*np.exp(-self.p_acc*Ts) # potensielt += her
+        gyroscope_bias_prediction = gyroscope_bias*np.exp(-self.p_gyro*Ts) # potensielt += her
 
         x_nominal_predicted = np.concatenate(
             (
@@ -176,15 +177,15 @@ class ESKF:
 
         # Allocate the matrix
         A = np.zeros((15, 15))
-
+        #acc og omega i  body
         # Set submatrices
-        A[POS_IDX * VEL_IDX] = np.zeros((3,))
-        A[VEL_IDX * ERR_ATT_IDX] = np.zeros((3,))
-        A[VEL_IDX * ERR_ACC_BIAS_IDX] = np.zeros((3,))
-        A[ERR_ATT_IDX * ERR_ATT_IDX] = np.zeros((3,))
-        A[ERR_ATT_IDX * ERR_GYRO_BIAS_IDX] = np.zeros((3,))
-        A[ERR_ACC_BIAS_IDX * ERR_ACC_BIAS_IDX] = np.zeros((3,))
-        A[ERR_GYRO_BIAS_IDX * ERR_GYRO_BIAS_IDX] = np.zeros((3,))
+        A[POS_IDX * VEL_IDX] = np.eye(3) 
+        A[VEL_IDX * ERR_ATT_IDX] = -R@cross_product_matrix(acceleration)
+        A[VEL_IDX * ERR_ACC_BIAS_IDX] = -R
+        A[ERR_ATT_IDX * ERR_ATT_IDX] = -cross_product_matrix(omega)
+        A[ERR_ATT_IDX * ERR_GYRO_BIAS_IDX] = -np.eye(3) 
+        A[ERR_ACC_BIAS_IDX * ERR_ACC_BIAS_IDX] = -self.p_acc @ np.eye(3) 
+        A[ERR_GYRO_BIAS_IDX * ERR_GYRO_BIAS_IDX] = -self.p_gyro @ np.eye(3) 
 
         # Bias correction
         A[VEL_IDX * ERR_ACC_BIAS_IDX] = A[VEL_IDX * ERR_ACC_BIAS_IDX] @ self.S_a
@@ -218,6 +219,10 @@ class ESKF:
         R = quaternion_to_rotation_matrix(x_nominal[ATT_IDX], debug=self.debug)
 
         G = np.zeros((15, 12))
+        G[VEL_IDX * N_slice] = -R
+        G[ERR_ATT_IDX * N_slice] = -np.eye(3)
+        G[ERR_ACC_BIAS_IDX * N_slice] = np.eye(3)
+        G[ERR_GYRO_BIAS_IDX * N_slice] = np.eye(3)
 
         assert G.shape == (15, 12), f"ESKF.Gerr: G-matrix shape incorrect {G.shape}"
         return G
@@ -258,8 +263,10 @@ class ESKF:
 
         A = self.Aerr(x_nominal, acceleration, omega)
         G = self.Gerr(x_nominal)
-
-        V = np.zeros((30, 30))
+        D = self.Q_err
+        
+        V = np.zeros((30, 30)) 
+        V = np.block([[-A, (G@D@G).T],[np.zeros((15,15)), A.T]])
         assert V.shape == (
             30,
             30,
