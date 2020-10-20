@@ -211,15 +211,24 @@ for i,_ in enumerate(trackers):
 
 #Consistency
 confprob = 0.9
-CI2 = np.array(scipy.stats.chi2.interval(confprob, 2))
-CI4 = np.array(scipy.stats.chi2.interval(confprob, 4))
 
-confprob = confprob
-CI2K = np.array(scipy.stats.chi2.interval(confprob, 2 * K)) / K
-CI4K = np.array(scipy.stats.chi2.interval(confprob, 4 * K)) / K
-ANEESpos = np.mean(NEESpos)
-ANEESvel = np.mean(NEESvel)
-ANEES = np.mean(NEES)
+for i, (name, _) in enumerate(zip(names, trackers)):
+    CI2 = np.array(scipy.stats.chi2.interval(confprob, 2))
+    CI4 = np.array(scipy.stats.chi2.interval(confprob, 4))
+
+    confprob = confprob
+    CI2K = np.array(scipy.stats.chi2.interval(confprob, 2 * K)) / K
+    CI4K = np.array(scipy.stats.chi2.interval(confprob, 4 * K)) / K
+    ANEESpos = np.mean(NEESpos[i,:])
+    ANEESvel = np.mean(NEESvel[i,:])
+    ANEES = np.mean(NEES[i,:])
+
+
+    print(f"{name}: ANEESpos = {ANEESpos:.2f} with CI = [{CI2K[0]:.2f}, {CI2K[1]:.2f}]")
+    print(f"{name}: ANEESvel = {ANEESvel:.2f} with CI = [{CI2K[0]:.2f}, {CI2K[1]:.2f}]")
+    print(f"{name}: ANEES = {ANEES:.2f} with CI = [{CI4K[0]:.2f}, {CI4K[1]:.2f}]")
+
+
 
 # %% plots
 # trajectory
