@@ -180,7 +180,7 @@ class ESKF:
         #acc og omega i  body
         # Set submatrices
         A[POS_IDX * VEL_IDX] = np.eye(3) 
-        A[VEL_IDX * ERR_ATT_IDX] = -R@cross_product_matrix(acceleration)
+        A[VEL_IDX * ERR_ATT_IDX] = -R@cross_product_matrix(acceleration) #antar acc = am-ab altså debiased
         A[VEL_IDX * ERR_ACC_BIAS_IDX] = -R
         A[ERR_ATT_IDX * ERR_ATT_IDX] = -cross_product_matrix(omega)
         A[ERR_ATT_IDX * ERR_GYRO_BIAS_IDX] = -np.eye(3) 
@@ -271,10 +271,11 @@ class ESKF:
             30,
             30,
         ), f"ESKF.discrete_error_matrices: Van Loan matrix shape incorrect {omega.shape}"
-        VanLoanMatrix = la.expm(V)  # This can be slow...
-
-        Ad = np.zeros((15, 15))
-        GQGd = np.zeros((15, 15))
+        VanLoanMatrix = la.expm(V*Ts)  # This can be slow...
+        
+        
+        Ad = VanLoanMatrix[CatSlice(15,30)**2].T #V1 transposed
+        GQGd = Ad @ VanLoanMatrix[CatSlice(0,15)*CatSlice(15,30)] # V1.T*V2
 
         assert Ad.shape == (
             15,
