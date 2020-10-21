@@ -311,7 +311,7 @@ class ESKF:
         Returns:
             np.ndarray: The predicted error state covariance matrix, shape (15, 15)
         """
-
+        print("jeg ELSKER tiss haha:)")
         assert x_nominal.shape == (
             16,
         ), f"ESKF.predict_covariance: x_nominal shape incorrect {x_nominal.shape}"
@@ -431,15 +431,16 @@ class ESKF:
         DTX_IDX = POS_IDX + VEL_IDX + ERR_ACC_BIAS_IDX + ERR_GYRO_BIAS_IDX
 
         x_injected = x_nominal.copy()
-        # TODO: Inject error state into nominal state (except attitude / quaternion)
-        # TODO: Inject attitude
-        # TODO: Normalize quaternion
+        x_injected[INJ_IDX] = x_nominal[INJ_IDX] + delta_x[DTX_IDX]
+        delta_q = np.array([[1, delta_x[ERR_ATT_IDX]/2]]).T
+        x_injected[ATT_IDX] = quaternion_product(x_nominal[ATT_IDX], delta_q)
+        x_injected[ATT_IDX] = x_injected[ATT_IDX]/la.norm(x_injected[ATT_IDX])
+
 
         # Covariance
-        G_injected = np.zeros((1,))  # TODO: Compensate for injection in the covariances
-        P_injected = np.zeros(
-            (15, 15)
-        )  # TODO: Compensate for injection in the covariances
+        G_injected = np.zeros((15,15))  # 10.86
+        G_injected = la.block_diag([np.eye(6), np.eye(3)-cross_product_matrix(1/2*delta_q), np.eye(6)])
+        P_injected = G_injected @ P @ G_injected.T 
 
         assert x_injected.shape == (
             16,
