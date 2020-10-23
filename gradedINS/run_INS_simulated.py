@@ -12,7 +12,7 @@ try: # see if tqdm is available, otherwise define it as a dummy
         __IPYTHON__
         from tqdm.notebook import tqdm
     except:
-        from tqdm import tqdm
+        import tqdm
 except Exception as e:
     print(e)
     print(
@@ -192,7 +192,8 @@ doGNSS: bool = True  # TODO: Set this to False if you want to check that the pre
 GNSSk: int = 0  # keep track of current step in GNSS measurements
 for k in tqdm.trange(N):
     if doGNSS and timeIMU[k] >= timeGNSS[GNSSk]:
-        NIS[GNSSk] = eskf.innovation_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
+        NIS[GNSSk] = eskf.NIS_GNSS_position(x_pred[k], P_est[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
+        # eskf.innovation_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
 
         x_est[k], P_est[k] = eskf.update_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
         assert np.all(np.isfinite(P_est[k])), f"Not finite P_pred at index {k}"
@@ -426,5 +427,6 @@ axs6[2].boxplot([NEES_pos[0:N].T, NEES_vel[0:N].T, NEES_att[0:N].T, NEES_accbias
 axs6[2].legend(['NEES pos', 'NEES vel', 'NEES att', 'NEES accbias', 'NEES gyrobias', 'gauss (3 dim)'])
 plt.grid()
 
+plt.show()
 
 # %%
