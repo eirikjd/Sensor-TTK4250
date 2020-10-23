@@ -663,15 +663,15 @@ class ESKF:
         delta_position = x_true[POS_IDX] - x_nominal[POS_IDX]
         delta_velocity = x_true[VEL_IDX] - x_nominal[VEL_IDX]
 
-        quaternion_conj = quaternion_product()
-        np.array([1, 0, 0, 0])  # TODO: Conjugate of quaternion
+        quaternion_conj = np.diag(1,-1,-1,-1) @ x_nominal[ATT_IDX] 
+        quaternion_inv = quaternion_conj/la.norm(x_nominal[ATT_IDX]) 
 
-        delta_quaternion = np.array([1, 0, 0, 0])  # TODO: Error quaternion
-        delta_theta = np.zeros((3,))
+        delta_quaternion = quaternion_product(quaternion_inv, x_true[ATT_IDX])
+        delta_theta = delta_quaternion[1:]*2
 
         # Concatenation of bias indices
         BIAS_IDX = ACC_BIAS_IDX + GYRO_BIAS_IDX
-        delta_bias = np.zeros((6,))  # TODO: Error biases
+        delta_bias = x_true[BIAS_IDX]-x_nominal[BIAS_IDX]  # TODO: Error biases
 
         d_x = np.concatenate((delta_position, delta_velocity, delta_theta, delta_bias))
 
