@@ -121,10 +121,11 @@ class ESKF:
 
         vec_inc = Ts*omega
         vec_inc_norm = la.norm(vec_inc)
-        quaternion_prediction = np.array(
-            quaternion_product(quaternion,
-                     np.array([[np.cos(vec_inc_norm/2), (vec_inc*np.sin(vec_inc_norm/2))/vec_inc_norm]]).T)
-        )  # dobbeltsjekk
+
+        r_quat = np.array([np.cos(vec_inc_norm/2), *(vec_inc.T * np.sin(vec_inc_norm/2))/vec_inc_norm]).T
+
+        quaternion_prediction = quaternion_product(quaternion, r_quat)
+        # dobbeltsjekk
 
         # Normalize quaternion
         quaternion_prediction = quaternion_prediction/la.norm(quaternion_prediction)

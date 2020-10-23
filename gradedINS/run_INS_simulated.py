@@ -166,6 +166,8 @@ NEES_att = np.zeros(steps)
 NEES_accbias = np.zeros(steps)
 NEES_gyrobias = np.zeros(steps)
 
+Ts_IMU = [0, *np.diff(timeIMU)]
+
 # %% Initialise
 x_pred[0, POS_IDX] = np.array([0, 0, -5])  # starting 5 metres above ground
 x_pred[0, VEL_IDX] = np.array([20, 0, 0])  # starting at 20 m/s due north
@@ -184,22 +186,22 @@ dummy = eskf.update_GNSS_position(x_pred[0], P_pred[0], z_GNSS[0], R_GNSS, lever
 # %% Run estimation
 # run this file with 'python -O run_INS_simulated.py' to turn of assertions and get about 8/5 speed increase for longer runs
 
-N: int = steps # TODO: choose a small value to begin with (500?), and gradually increase as you OK results
+N: int = 500 # TODO: choose a small value to begin with (500?), and gradually increase as you OK results # ->steps
 doGNSS: bool = True  # TODO: Set this to False if you want to check that the predictions make sense over reasonable time lenghts
 
 GNSSk: int = 0  # keep track of current step in GNSS measurements
 for k in tqdm.trange(N):
     if doGNSS and timeIMU[k] >= timeGNSS[GNSSk]:
-        NIS[GNSSk] = # TODO:
+        NIS[GNSSk] = eskf.innovation_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
 
-        x_est[k], P_est[k] = # TODO:
+        x_est[k], P_est[k] = eskf.update_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
         assert np.all(np.isfinite(P_est[k])), f"Not finite P_pred at index {k}"
 
         GNSSk += 1
     else:
         # no updates, so let us take estimate = prediction
-        x_est[k] = # TODO
-        P_est[k] = # TODO
+        x_est[k] = x_pred[k]
+        P_est[k] = P_pred[k]
 
     delta_x[k] = eskf.delta_x(x_est[k], x_true[k])
     (
@@ -209,10 +211,10 @@ for k in tqdm.trange(N):
         NEES_att[k],
         NEES_accbias[k],
         NEES_gyrobias[k],
-    ) = # TODO: The true error state at step k
+    ) = eskf.NEESes(x_est[k], P_est[k], x_true[k])
 
     if k < N - 1:
-        x_pred[k + 1], P_pred[k + 1] = # TODO: Hint: measurements come from the the present and past, not the future
+        x_pred[k + 1], P_pred[k + 1] = eskf.predict(x_est[k], P_est[k], z_acceleration[k+1], z_gyroscope[k+1], Ts_IMU[k+1])
 
     if eskf.debug:
         assert np.all(np.isfinite(P_pred[k])), f"Not finite P_pred at index {k + 1}"
