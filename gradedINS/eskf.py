@@ -569,7 +569,7 @@ class ESKF:
         W = P @ H.T @ la.inv(S) # Standard ricatti
         delta_x = W @ (z_GNSS_position - innovation) #? innovation her?
 
-        Jo = I - W @ H  # for Joseph form
+        #Jo = I - W @ H  # for Joseph form
 
         P_update = (I - W @ H) @ P
 
@@ -630,7 +630,7 @@ class ESKF:
             x_nominal, P, z_GNSS_position, R_GNSS, lever_arm
         )
 
-        NIS = 0  # TODO: Calculate NIS
+        NIS = v.T @ la.solve(S,v) # TODO: Calculate NIS
 
         assert NIS >= 0, "EKSF.NIS_GNSS_positionNIS: NIS not positive"
 
