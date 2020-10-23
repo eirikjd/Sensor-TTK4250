@@ -185,8 +185,8 @@ class ESKF:
         A[VEL_IDX * ERR_ACC_BIAS_IDX] = -R
         A[ERR_ATT_IDX * ERR_ATT_IDX] = -cross_product_matrix(omega)
         A[ERR_ATT_IDX * ERR_GYRO_BIAS_IDX] = -np.eye(3)
-        A[ERR_ACC_BIAS_IDX * ERR_ACC_BIAS_IDX] = -self.p_acc @ np.eye(3)
-        A[ERR_GYRO_BIAS_IDX * ERR_GYRO_BIAS_IDX] = -self.p_gyro @ np.eye(3)
+        A[ERR_ACC_BIAS_IDX * ERR_ACC_BIAS_IDX] = -self.p_acc * np.eye(3)
+        A[ERR_GYRO_BIAS_IDX * ERR_GYRO_BIAS_IDX] = -self.p_gyro * np.eye(3)
 
         # Bias correction
         A[VEL_IDX * ERR_ACC_BIAS_IDX] = A[VEL_IDX * ERR_ACC_BIAS_IDX] @ self.S_a
@@ -267,7 +267,7 @@ class ESKF:
         D = self.Q_err
 
         V = np.zeros((30, 30))
-        V = np.block([[-A, (G@D@G).T],[np.zeros((15,15)), A.T]])
+        V = np.block([[-A, G@D@G.T],[np.zeros((15,15)), A.T]]) * Ts
         assert V.shape == (
             30,
             30,
@@ -433,14 +433,14 @@ class ESKF:
 
         x_injected = x_nominal.copy()
         x_injected[INJ_IDX] = x_nominal[INJ_IDX] + delta_x[DTX_IDX]
-        delta_q = np.array([[1, delta_x[ERR_ATT_IDX]/2]]).T
+        delta_q = np.array([1, *delta_x[ERR_ATT_IDX]/2]).T
         x_injected[ATT_IDX] = quaternion_product(x_nominal[ATT_IDX], delta_q)
         x_injected[ATT_IDX] = x_injected[ATT_IDX]/la.norm(x_injected[ATT_IDX])
 
 
         # Covariance
         G_injected = np.zeros((15,15))  # 10.86
-        G_injected = la.block_diag([np.eye(6), np.eye(3)-cross_product_matrix(1/2*delta_q), np.eye(6)])
+        G_injected = la.block_diag(np.eye(6), np.eye(3)-cross_product_matrix(1/2*delta_q[1:]), np.eye(6))
         P_injected = G_injected @ P @ G_injected.T
 
         assert x_injected.shape == (
@@ -495,9 +495,9 @@ class ESKF:
             3,
         ), f"ESKF.innovation_GNSS: lever_arm shape incorrect {lever_arm.shape}"
 
-        H = np.block([np.eye(3), np.zeros(3, 13)]) # For GNSS (from lecture 9)
+        H = np.block([np.eye(3), np.zeros([3, 12])]) # For GNSS (from lecture 9)
 
-        v = z_GNSS_position - x_nominal
+        v = z_GNSS_position - x_nominal[POS_IDX]
 
         # leverarm compensation
         if not np.allclose(lever_arm, 0):
@@ -558,7 +558,7 @@ class ESKF:
             x_nominal, P, z_GNSS_position, R_GNSS, lever_arm
         )
 
-        H = np.block([np.eye(3), np.zeros(3, 13)]) # Same as in innovation_GNSS
+        H = np.block([np.eye(3), np.zeros([3, 12])]) # Same as in innovation_GNSS
 
         # in case of a specified lever arm
         if not np.allclose(lever_arm, 0):
