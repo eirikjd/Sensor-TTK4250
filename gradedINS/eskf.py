@@ -122,7 +122,7 @@ class ESKF:
         vec_inc = Ts*omega
         vec_inc_norm = la.norm(vec_inc)
         quaternion_prediction = np.array(
-            np.cross(quaternion,
+            quaternion_product(quaternion,
                      np.array([[np.cos(vec_inc_norm/2), (vec_inc*np.sin(vec_inc_norm/2))/vec_inc_norm]]).T)
         )  # dobbeltsjekk
 
@@ -663,8 +663,8 @@ class ESKF:
         delta_position = x_true[POS_IDX] - x_nominal[POS_IDX]
         delta_velocity = x_true[VEL_IDX] - x_nominal[VEL_IDX]
 
-        quaternion_conj = np.diag(1,-1,-1,-1) @ x_nominal[ATT_IDX] 
-        quaternion_inv = quaternion_conj/la.norm(x_nominal[ATT_IDX]) 
+        quaternion_conj = np.diag(1,-1,-1,-1) @ x_nominal[ATT_IDX]
+        quaternion_inv = quaternion_conj/la.norm(x_nominal[ATT_IDX])
 
         delta_quaternion = quaternion_product(quaternion_inv, x_true[ATT_IDX])
         delta_theta = delta_quaternion[1:]*2
@@ -708,10 +708,10 @@ class ESKF:
         d_x = cls.delta_x(x_nominal, x_true)
 
         NEES_all = cls._NEES(d_x,P) # TODO: NEES all
-        NEES_pos = cls._NEES(d_x[POS_IDX], P[POS_IDX**2]) 
-        NEES_vel = cls._NEES(d_x[VEL_IDX], P[VEL_IDX**2]) 
+        NEES_pos = cls._NEES(d_x[POS_IDX], P[POS_IDX**2])
+        NEES_vel = cls._NEES(d_x[VEL_IDX], P[VEL_IDX**2])
         NEES_att = cls._NEES(d_x[ATT_IDX], P[ATT_IDX**2])  #
-        NEES_accbias = cls._NEES(d_x[ACC_BIAS_IDX], P[ACC_BIAS_IDX**2])  
+        NEES_accbias = cls._NEES(d_x[ACC_BIAS_IDX], P[ACC_BIAS_IDX**2])
         NEES_gyrobias = cls._NEES(d_x[GYRO_BIAS_IDX], P[GYRO_BIAS_IDX**2])
 
         NEESes = np.array(
