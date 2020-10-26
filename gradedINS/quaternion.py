@@ -111,8 +111,8 @@ def quaternion_to_euler(quaternion: np.ndarray) -> np.ndarray:
     e3 = quaternion[3]
 
 
-    phi = np.arctan2(2*(e3*e1 + n*e1), n**2 - e1**2 - e2**2 + e3**2)
-    theta = np.arcsin(2*(n*e2 + e1*e3))
+    phi = np.arctan2(2*(e3*e2 + n*e1), n**2 - e1**2 - e2**2 + e3**2)
+    theta = np.arcsin(2*(n*e2 - e1*e3))
     psi = np.arctan2(2*(e1*e2 + n*e3), n**2 + e1**2 - e2**2 - e3**2)
 
     euler_angles = np.array([phi, theta, psi])
