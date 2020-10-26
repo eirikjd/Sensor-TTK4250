@@ -231,7 +231,7 @@ ax.plot3D(z_GNSS[:GNSSk, 1], z_GNSS[:GNSSk, 0], -z_GNSS[:GNSSk, 2])
 ax.set_xlabel("East [m]")
 ax.set_ylabel("North [m]")
 ax.set_zlabel("Altitude [m]")
-
+ax.legend(["Estimated", "GNSS"])
 
 # state estimation
 t = np.linspace(0, dt * (N - 1), N)
@@ -317,9 +317,9 @@ axs3[4].plot(t, delta_x[:N, ERR_GYRO_BIAS_IDX] * 180 / np.pi)
 axs3[4].set(ylabel="Gyro bias error [deg/s]")
 axs3[4].legend(
     [
-        f"$x$ ({np.sqrt(np.mean((delta_x[:N, 12]* 180 / np.pi)**2))})",
-        f"$y$ ({np.sqrt(np.mean((delta_x[:N, 13]* 180 / np.pi)**2))})",
-        f"$z$ ({np.sqrt(np.mean((delta_x[:N, 14]* 180 / np.pi)**2))})",
+        f"$x$ ({np.sqrt(np.mean((delta_x[:N, 9]* 180 / np.pi)**2))})",
+        f"$y$ ({np.sqrt(np.mean((delta_x[:N, 10]* 180 / np.pi)**2))})",
+        f"$z$ ({np.sqrt(np.mean((delta_x[:N, 11]* 180 / np.pi)**2))})",
     ]
 )
 
@@ -331,7 +331,7 @@ fig4, axs4 = plt.subplots(2, 1, num=4, clear=True)
 axs4[0].plot(t, np.linalg.norm(delta_x[:N, POS_IDX], axis=1))
 axs4[0].plot(
     np.arange(0, N, 100) * dt,
-    np.linalg.norm(x_true[99:100:N, :3] - z_GNSS[:GNSSk], axis=1),
+    np.linalg.norm(x_true[99:N:100, :3] - z_GNSS[:GNSSk], axis=1)
 )
 axs4[0].set(ylabel="Position error [m]")
 axs4[0].legend(
@@ -343,7 +343,7 @@ axs4[0].legend(
 
 axs4[1].plot(t, np.linalg.norm(delta_x[:N, VEL_IDX], axis=1))
 axs4[1].set(ylabel="Speed error [m/s]")
-axs4[1].legend([f"RMSE: {np.sqrt(np.mean(np.sum(delta_x[:N, VEL_IDX]**2, axis=0)))}"])
+axs4[1].legend([f"RMSE: {np.sqrt(np.mean(np.sum(delta_x[:N, VEL_IDX]**2, axis=1)))}"])
 
 
 # %% Consistency
