@@ -110,35 +110,30 @@ gnss_steps = len(z_GNSS)
 # %% Measurement noise
 # IMU noise values for STIM300, based on datasheet and simulation sample rate
 # Continous noise
-# # TODO: What to remove here?
-# cont_gyro_noise_std = 4.36e-5  # (rad/s)/sqrt(Hz)
-# cont_acc_noise_std = 1.167e-3  # (m/s**2)/sqrt(Hz)
+# TODO: What to remove here?
+cont_gyro_noise_std = 4.36e-5  # (rad/s)/sqrt(Hz)
+cont_acc_noise_std = 1.167e-3  # (m/s**2)/sqrt(Hz)
 
-# # Discrete sample noise at simulation rate used
-# rate_std = 0.5 * cont_gyro_noise_std * np.sqrt(1 / dt)
-# acc_std = 0.5 * cont_acc_noise_std * np.sqrt(1 / dt) 1/1000
-# gyro =
-# # Bias values
-# rate_bias_driving_noise_std = 5e-5
-# cont_rate_bias_driving_noise_std = (
-#     (1 / 3) * rate_bias_driving_noise_std / np.sqrt(1 / dt)
-# )
+# Discrete sample noise at simulation rate used
+rate_std = 0.5 * cont_gyro_noise_std * np.sqrt(1 / dt)
+acc_std = 0.5 * cont_acc_noise_std * np.sqrt(1 / dt)
 
-# cont_acc_bias_driving_noise_std = 6 * acc_bias_driving_noise_std / np.sqrt(1 / dt)
+# Bias values
+rate_bias_driving_noise_std = 5e-5
+cont_rate_bias_driving_noise_std = (
+    (1 / 3) * rate_bias_driving_noise_std / np.sqrt(1 / dt)
+)
+
+acc_bias_driving_noise_std = 4e-3
+cont_acc_bias_driving_noise_std = 6 * acc_bias_driving_noise_std / np.sqrt(1 / dt)
 
 # Position and velocity measurement
 p_std = np.array([0.3, 0.3, 0.5])  # Measurement noise
 R_GNSS = np.diag(p_std ** 2)
 
 p_acc = 1e-16
+
 p_gyro = 1e-16
-
-acc_std = 1e-3
-rate_std = 1e-2
-
-cont_acc_bias_driving_noise_std = 0.01 * acc_std    # Må være mindre enn acc_std for at den skal fange opp "trege endringer"
-cont_rate_bias_driving_noise_std = 0.01 * rate_std
-
 
 # %% Estimator
 eskf = ESKF(

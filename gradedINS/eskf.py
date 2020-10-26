@@ -116,8 +116,8 @@ class ESKF:
 
         R = quaternion_to_rotation_matrix(quaternion, debug=self.debug)
 
-        position_prediction = position + Ts*velocity + (Ts**2*(R@acceleration + self.g))/2
-        velocity_prediction = velocity +Ts*(R@acceleration + self.g)
+        position_prediction = position + Ts*velocity + (Ts**2*R@acceleration)/2
+        velocity_prediction = velocity +Ts*R@acceleration
 
         vec_inc = Ts*omega
         vec_inc_norm = la.norm(vec_inc)
