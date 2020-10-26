@@ -116,8 +116,8 @@ class ESKF:
 
         R = quaternion_to_rotation_matrix(quaternion, debug=self.debug)
 
-        position_prediction = position + Ts*velocity + (Ts**2*R@acceleration)/2
-        velocity_prediction = velocity +Ts*R@acceleration
+        position_prediction = position + Ts*velocity + (Ts**2*(R@acceleration + self.g))/2
+        velocity_prediction = velocity +Ts*(R@acceleration + self.g)
 
         vec_inc = Ts*omega
         vec_inc_norm = la.norm(vec_inc)
@@ -129,6 +129,9 @@ class ESKF:
 
         # Normalize quaternion
         quaternion_prediction = quaternion_prediction/la.norm(quaternion_prediction)
+
+        # acceleration_bias_prediction = acceleration_bias - Ts * self.p_acc * acceleration_bias
+        # gyroscope_bias_prediction = gyroscope_bias - Ts * self.p_gyro * gyroscope_bias          #? Spør studass her
 
         acceleration_bias_prediction = acceleration_bias*np.exp(-self.p_acc*Ts) # potensielt += her
         gyroscope_bias_prediction = gyroscope_bias*np.exp(-self.p_gyro*Ts) # potensielt += her
@@ -181,7 +184,7 @@ class ESKF:
         #acc og omega i  body
         # Set submatrices
         A[POS_IDX * VEL_IDX] = np.eye(3)
-        A[VEL_IDX * ERR_ATT_IDX] = -R@cross_product_matrix(acceleration) #antar acc = am-ab altså debiased
+        A[VEL_IDX * ERR_ATT_IDX] = -R@cross_product_matrix(acceleration) #antar acc = am-ab altså debiased #? studass pls debias????
         A[VEL_IDX * ERR_ACC_BIAS_IDX] = -R
         A[ERR_ATT_IDX * ERR_ATT_IDX] = -cross_product_matrix(omega)
         A[ERR_ATT_IDX * ERR_GYRO_BIAS_IDX] = -np.eye(3)
@@ -328,7 +331,7 @@ class ESKF:
 
         Ad, GQGd = self.discrete_error_matrices(x_nominal, acceleration, omega, Ts)
 
-        P_predicted = Ad@P@Ad.T + GQGd #algorithm 1
+        P_predicted = Ad @ P @ Ad.T + Ad.T @ GQGd #algorithm 1 #? Ad.T @ GQGd eller bare GQGd
 
         assert P_predicted.shape == (
             15,
@@ -432,7 +435,9 @@ class ESKF:
 
         x_injected = x_nominal.copy()
         x_injected[INJ_IDX] = x_nominal[INJ_IDX] + delta_x[DTX_IDX]
+
         delta_q = np.array([1, *delta_x[ERR_ATT_IDX]/2]).T
+
         x_injected[ATT_IDX] = quaternion_product(x_nominal[ATT_IDX], delta_q)
         x_injected[ATT_IDX] = x_injected[ATT_IDX]/la.norm(x_injected[ATT_IDX])
 
@@ -567,11 +572,11 @@ class ESKF:
         # KF error state update
         # Lecture 9, slide 3
         W = P @ H.T @ la.inv(S) # Standard ricatti
-        delta_x = W @ (z_GNSS_position - innovation) #? innovation her?
+        delta_x = W @ innovation
 
-        #Jo = I - W @ H  # for Joseph form
+        Jo = I - W @ H  # for Joseph form
 
-        P_update = (I - W @ H) @ P
+        P_update = Jo @ P
 
         # error state injection
         x_injected, P_injected = self.inject(x_nominal, delta_x, P_update)
