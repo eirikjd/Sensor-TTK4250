@@ -176,8 +176,8 @@ x_pred[0, 6] = 1  # no initial rotation: nose to North, right to East, and belly
 P_pred[0][POS_IDX ** 2] = 0.1**2 * np.eye(3)# TODO
 P_pred[0][VEL_IDX ** 2] = 0.05 **2 * np.eye(3)# TODO
 P_pred[0][ERR_ATT_IDX ** 2] = 0.05 **2 * np.eye(3)# TODO # error rotation vector (not quat)
-P_pred[0][ERR_ACC_BIAS_IDX ** 2] = 0.001 * np.eye(3)# TODO
-P_pred[0][ERR_GYRO_BIAS_IDX ** 2] = 0.001 * np.eye(3)# TODO
+P_pred[0][ERR_ACC_BIAS_IDX ** 2] = 0.1 * np.eye(3)# TODO
+P_pred[0][ERR_GYRO_BIAS_IDX ** 2] = 0.01 * np.eye(3)# TODO
 
 # %% Test: you can run this cell to test your implementation
 # dummy = eskf.predict(x_pred[0], P_pred[0], z_acceleration[0], z_gyroscope[0], dt)
