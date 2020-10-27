@@ -275,7 +275,7 @@ class ESKF:
             30,
             30,
         ), f"ESKF.discrete_error_matrices: Van Loan matrix shape incorrect {omega.shape}"
-        VanLoanMatrix = la.expm(V*Ts)  # This can be slow...
+        VanLoanMatrix = la.expm(V)  # This can be slow...
 
 
         Ad = VanLoanMatrix[CatSlice(15,30)**2].T #V1 transposed
@@ -331,7 +331,7 @@ class ESKF:
 
         Ad, GQGd = self.discrete_error_matrices(x_nominal, acceleration, omega, Ts)
 
-        P_predicted = Ad @ P @ Ad.T + Ad.T @ GQGd #algorithm 1 #? Ad.T @ GQGd eller bare GQGd
+        P_predicted = Ad @ P @ Ad.T + GQGd #algorithm 1 #? Ad.T @ GQGd eller bare GQGd
 
         assert P_predicted.shape == (
             15,
@@ -576,7 +576,7 @@ class ESKF:
 
         Jo = I - W @ H  # for Joseph form
 
-        P_update = Jo @ P
+        P_update = Jo @ P @ Jo.T + W @ R_GNSS @ W.T
 
         # error state injection
         x_injected, P_injected = self.inject(x_nominal, delta_x, P_update)
@@ -727,7 +727,7 @@ class ESKF:
 
     @classmethod
     def _NEES(cls, diff, P):
-        NEES = diff.T @ P @ diff  # TODO: NEES
+        NEES = diff.T @ la.inv(P) @ diff  # TODO: NEES
         assert NEES >= 0, "ESKF._NEES: negative NEES"
         return NEES
 
