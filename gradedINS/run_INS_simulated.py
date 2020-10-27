@@ -10,7 +10,7 @@ import numpy as np
 try: # see if tqdm is available, otherwise define it as a dummy
     try: # Ipython seem to require different tqdm.. try..except seem to be the easiest way to check
         __IPYTHON__
-        from tqdm.notebook import tqdm
+        import tqdm
     except:
         import tqdm
 except Exception as e:
@@ -173,9 +173,9 @@ x_pred[0, VEL_IDX] = np.array([20, 0, 0])  # starting at 20 m/s due north
 x_pred[0, 6] = 1  # no initial rotation: nose to North, right to East, and belly down
 
 # These have to be set reasonably to get good results
-P_pred[0][POS_IDX ** 2] = 0.2**2 * np.eye(3)# TODO
-P_pred[0][VEL_IDX ** 2] = 0.04 **2 * np.eye(3)# TODO
-P_pred[0][ERR_ATT_IDX ** 2] = 0.01 **2 * np.eye(3)# TODO # error rotation vector (not quat)
+P_pred[0][POS_IDX ** 2] = 0.1**2 * np.eye(3)# TODO
+P_pred[0][VEL_IDX ** 2] = 0.05 **2 * np.eye(3)# TODO
+P_pred[0][ERR_ATT_IDX ** 2] = 0.05 **2 * np.eye(3)# TODO # error rotation vector (not quat)
 P_pred[0][ERR_ACC_BIAS_IDX ** 2] = 0.001 * np.eye(3)# TODO
 P_pred[0][ERR_GYRO_BIAS_IDX ** 2] = 0.001 * np.eye(3)# TODO
 
