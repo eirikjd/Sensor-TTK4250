@@ -439,7 +439,7 @@ class ESKF:
 
         delta_q = np.array([1, *delta_x[ERR_ATT_IDX]/2]).T
 
-        x_injected[ATT_IDX] = quaternion_product(x_nominal[ATT_IDX], delta_q)
+        x_injected[ATT_IDX] = quaternion_product(x_injected[ATT_IDX], delta_q)
         x_injected[ATT_IDX] = x_injected[ATT_IDX]/la.norm(x_injected[ATT_IDX])
 
 

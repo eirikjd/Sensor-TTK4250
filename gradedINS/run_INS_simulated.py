@@ -119,7 +119,7 @@ rate_std = 0.5 * cont_gyro_noise_std * np.sqrt(1 / dt)
 acc_std = 0.5 * cont_acc_noise_std * np.sqrt(1 / dt)
 
 # Bias values
-rate_bias_driving_noise_std = 5e-5
+rate_bias_driving_noise_std = 5e-4
 cont_rate_bias_driving_noise_std = (
     (1 / 3) * rate_bias_driving_noise_std / np.sqrt(1 / dt)
 )
@@ -223,6 +223,7 @@ for k in tqdm.trange(N):
 
 # %% Plots
 plot_save_path = "./plots/simulated/"
+save_plots : bool = False
 
 
 fig1 = plt.figure(1)
@@ -234,7 +235,9 @@ ax.set_xlabel("East [m]")
 ax.set_ylabel("North [m]")
 ax.set_zlabel("Altitude [m]")
 ax.legend(["Estimated", "GNSS"])
-plt.savefig(plot_save_path + "traj_sim.pdf", format="pdf")
+
+if save_plots:
+    plt.savefig(plot_save_path + "traj_sim.pdf", format="pdf")
 
 # state estimation
 t = np.linspace(0, dt * (N - 1), N)
@@ -270,7 +273,8 @@ axs2[4].legend(["$x$", "$y$", "$z$"])
 
 
 fig2.suptitle("States estimates")
-plt.savefig(plot_save_path + "state_est_sim.pdf", format="pdf")
+if save_plots:
+    plt.savefig(plot_save_path + "state_est_sim.pdf", format="pdf")
 
 # state error plots
 fig3, axs3 = plt.subplots(5, 1, num=3, clear=True)
@@ -329,7 +333,8 @@ axs3[4].legend(
 )
 
 fig3.suptitle("States estimate errors")
-plt.savefig(plot_save_path + "errstate_est_sim.pdf", format="pdf")
+if save_plots:
+    plt.savefig(plot_save_path + "errstate_est_sim.pdf", format="pdf")
 
 # Error distance plot
 fig4, axs4 = plt.subplots(2, 1, num=4, clear=True)
@@ -343,14 +348,15 @@ axs4[0].set(ylabel="Position error [m]")
 axs4[0].legend(
     [
         f"Estimation error ({np.sqrt(np.mean(np.sum(delta_x[:N, POS_IDX]**2, axis=1)))})",
-        f"Measurement error ({np.sqrt(np.mean(np.sum((x_true[99:N:100, POS_IDX] - z_GNSS[GNSSk - 1])**2, axis=1)))})",
+        f"Measurement error ({np.sqrt(np.mean(np.sum((x_true[99:N:100, POS_IDX] - z_GNSS[:GNSSk])**2, axis=1)))})",
     ]
 )
 
 axs4[1].plot(t, np.linalg.norm(delta_x[:N, VEL_IDX], axis=1))
 axs4[1].set(ylabel="Speed error [m/s]")
 axs4[1].legend([f"RMSE: {np.sqrt(np.mean(np.sum(delta_x[:N, VEL_IDX]**2, axis=1)))}"])
-plt.savefig(plot_save_path + "rmse_sim.pdf", format="pdf")
+if save_plots:
+    plt.savefig(plot_save_path + "rmse_sim.pdf", format="pdf")
 
 
 # %% Consistency
@@ -416,7 +422,8 @@ axs5[6].set(
 )
 axs5[6].set_ylim([0, 20])
 
-plt.savefig(plot_save_path + "NEES_NIS_sim.pdf", format="pdf")
+if save_plots:
+    plt.savefig(plot_save_path + "NEES_NIS_sim.pdf", format="pdf")
 
 
 # boxplot
@@ -436,7 +443,8 @@ gauss_compare_3  = np.sum(np.random.randn(3, N)**2, axis=0)
 axs6[2].boxplot([NEES_pos[0:N].T, NEES_vel[0:N].T, NEES_att[0:N].T, NEES_accbias[0:N].T, NEES_gyrobias[0:N].T, gauss_compare_3], notch=True)
 axs6[2].legend(['NEES pos', 'NEES vel', 'NEES att', 'NEES accbias', 'NEES gyrobias', 'gauss (3 dim)'])
 plt.grid()
-plt.savefig(plot_save_path + "BOX_sim.pdf", format="pdf")
+if save_plots:
+    plt.savefig(plot_save_path + "BOX_sim.pdf", format="pdf")
 
 
 plt.show()

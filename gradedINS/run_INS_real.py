@@ -118,8 +118,8 @@ cont_gyro_noise_std = 4.36e-5  # (rad/s)/sqrt(Hz)
 cont_acc_noise_std = 1.167e-3  # (m/s**2)/sqrt(Hz)
 
 # Discrete sample noise at simulation rate used
-rate_std = 0.5 * cont_gyro_noise_std * np.sqrt(1 / dt)
-acc_std = 0.5 * cont_acc_noise_std * np.sqrt(1 / dt)
+rate_std = cont_gyro_noise_std * np.sqrt(1 / dt)
+acc_std = cont_acc_noise_std * np.sqrt(1 / dt)
 
 # Bias values
 rate_bias_driving_noise_std = 5e-5
@@ -160,8 +160,8 @@ Ts_IMU = [0, *np.diff(timeIMU)]
 
 
 # %% Initialise
-x_pred[0, POS_IDX] = np.array([0, 0, -5]) # starting 5 metres above ground
-x_pred[0, VEL_IDX] = np.array([20, 0, 0]) # starting at 20 m/s due north
+x_pred[0, POS_IDX] = z_GNSS[0,:] # Using first GPS-measurement
+x_pred[0, VEL_IDX] = np.array([0, 0, 0])
 x_pred[0, ATT_IDX] = np.array([
     np.cos(45 * np.pi / 180),
     0, 0,
@@ -176,12 +176,12 @@ P_pred[0][ERR_GYRO_BIAS_IDX**2] = (1e-3)**2 * np.eye(3)
 
 # %% Run estimation
 
-N = 2000 #steps
+N = 180000 #steps
 GNSSk = 0
 
 for k in tqdm(range(N)):
     if timeIMU[k] >= timeGNSS[GNSSk]:
-        R_GNSS = np.diag([1, 1, 1])* accuracy_GNSS[GNSSk] # TODO: Current GNSS covariance
+        R_GNSS = np.eye(3) * accuracy_GNSS[GNSSk] # TODO: Current GNSS covariance
         NIS[GNSSk] = eskf.NIS_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm=lever_arm)# TODO
 
         x_est[k], P_est[k] = eskf.update_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm=lever_arm)# TODO
