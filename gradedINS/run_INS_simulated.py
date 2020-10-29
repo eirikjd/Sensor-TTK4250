@@ -93,9 +93,9 @@ filename_to_load = "task_simulation.mat"
 loaded_data = scipy.io.loadmat(filename_to_load)
 
 S_a = loaded_data["S_a"]
-S_a = np.eye(len(S_a)) # For 3c
+# S_a = np.eye(len(S_a)) # For 3c
 S_g = loaded_data["S_g"]
-S_g = np.eye(len(S_g)) # For #c
+# S_g = np.eye(len(S_g)) # For 3c
 lever_arm = loaded_data["leverarm"].ravel()
 timeGNSS = loaded_data["timeGNSS"].ravel()
 timeIMU = loaded_data["timeIMU"].ravel()
@@ -449,6 +449,9 @@ if save_plots:
     plt.savefig(plot_save_path + "BOX_sim.pdf", format="pdf",)
 
 
+CI15N = np.array(scipy.stats.chi2.interval(confprob, 15 * N)) / N
+CI3N = np.array(scipy.stats.chi2.interval(confprob, 3 * N)) / N
+
 ANEES_tot = np.mean(NEES_all[:N])
 ANEES_pos = np.mean(NEES_pos[:N])
 ANEES_vel = np.mean(NEES_vel[:N])
@@ -456,18 +459,18 @@ ANEES_att = np.mean(NEES_att[:N])
 ANEES_accbias = np.mean(NEES_accbias[:N])
 ANEES_gyrobias = np.mean(NEES_gyrobias[:N])
 
-ANIS = np.mean(NIS)
+ANIS = np.mean(NIS[:N])
 
 
-print(f"{ANEES_tot=}, CI = [{CI15[0]}, {CI15[1]}]")
-print(f"{ANEES_pos=}, CI = [{CI3[0]}, {CI3[1]}]")
-print(f"{ANEES_vel=}, CI = [{CI3[0]}, {CI3[1]}]")
-print(f"{ANEES_att=}, CI = [{CI3[0]}, {CI3[1]}]")
-print(f"{ANEES_accbias=}, CI = [{CI3[0]}, {CI3[1]}]")
-print(f"{ANEES_gyrobias=}, CI = [{CI3[0]}, {CI3[1]}]")
+print(f"ANEES_tot={ANEES_tot:.2f}, CI = [{CI15N[0]}, {CI15N[1]}]")
+print(f"{ANEES_pos=}, CI = [{CI3N[0]}, {CI3N[1]}]")
+print(f"{ANEES_vel=}, CI = [{CI3N[0]}, {CI3N[1]}]")
+print(f"{ANEES_att=}, CI = [{CI3N[0]}, {CI3N[1]}]")
+print(f"{ANEES_accbias=}, CI = [{CI3N[0]}, {CI3N[1]}]")
+print(f"{ANEES_gyrobias=}, CI = [{CI3N[0]}, {CI3N[1]}]")
 
-print(f"{ANIS=}, CI = [{CI3[0]}, {CI3[1]}]")
+print(f"{ANIS=}, CI = [{CI3N[0]}, {CI3N[1]}]")
 
-plt.show()
+# plt.show()
 
 # %%
