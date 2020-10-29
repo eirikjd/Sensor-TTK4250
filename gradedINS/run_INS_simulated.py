@@ -453,16 +453,20 @@ ANEES_tot = np.mean(NEES_all[:N])
 ANEES_pos = np.mean(NEES_pos[:N])
 ANEES_vel = np.mean(NEES_vel[:N])
 ANEES_att = np.mean(NEES_att[:N])
-ANEES_acc_bias = np.mean(NEES_acc_bias[:N])
-ANEES_gyro_bias = np.mean(NEES_gyro_bias[:N])
+ANEES_accbias = np.mean(NEES_accbias[:N])
+ANEES_gyrobias = np.mean(NEES_gyrobias[:N])
 
-print(f"{ANEES_tot=}")
-print(f"{ANEES_pos=}")
-print(f"{ANEES_vel=}")
-print(f"{ANEES_att=}")
-print(f"{ANEES_acc_bias=}")
-print(f"{ANEES_gyro_bias=}")
+ANIS = np.mean(NIS)
 
+
+print(f"{ANEES_tot=}, CI = [{CI15[0]}, {CI15[1]}]")
+print(f"{ANEES_pos=}, CI = [{CI3[0]}, {CI3[1]}]")
+print(f"{ANEES_vel=}, CI = [{CI3[0]}, {CI3[1]}]")
+print(f"{ANEES_att=}, CI = [{CI3[0]}, {CI3[1]}]")
+print(f"{ANEES_accbias=}, CI = [{CI3[0]}, {CI3[1]}]")
+print(f"{ANEES_gyrobias=}, CI = [{CI3[0]}, {CI3[1]}]")
+
+print(f"{ANIS=}, CI = [{CI3[0]}, {CI3[1]}]")
 
 plt.show()
 
