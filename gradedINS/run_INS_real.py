@@ -22,7 +22,7 @@ except Exception as e:
     def tqdm(iterable, *args, **kwargs):
         return iterable
 
-from eskf import (
+from eskf_peter import (
     ESKF,
     POS_IDX,
     VEL_IDX,
@@ -144,7 +144,7 @@ eskf = ESKF(
     p_gyro,
     S_a = S_a, # set the accelerometer correction matrix
     S_g = S_g, # set the gyro correction matrix,
-    debug=True # False to avoid expensive debug checks
+    debug=False # False to avoid expensive debug checks
 )
 
 
@@ -176,12 +176,12 @@ P_pred[0][ERR_GYRO_BIAS_IDX**2] = (1e-3)**2 * np.eye(3)
 
 # %% Run estimation
 
-N = 180000 #steps
+N = 75000 #steps
 GNSSk = 0
 
 for k in tqdm(range(N)):
     if timeIMU[k] >= timeGNSS[GNSSk]:
-        R_GNSS = np.eye(3) * accuracy_GNSS[GNSSk] # TODO: Current GNSS covariance
+        R_GNSS = np.eye(3) * 0.1 * accuracy_GNSS[GNSSk] # TODO: Current GNSS covariance
         NIS[GNSSk] = eskf.NIS_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm=lever_arm)# TODO
 
         x_est[k], P_est[k] = eskf.update_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm=lever_arm)# TODO
@@ -195,7 +195,7 @@ for k in tqdm(range(N)):
         P_est[k] = P_pred[k] # TODO
 
     if k < N - 1:
-        x_pred[k + 1], P_pred[k + 1] = eskf.predict(x_est[k], P_est[k], z_acceleration[k + 1], z_gyroscope[k + 1], Ts_IMU[k + 1])# TODO
+        x_pred[k + 1], P_pred[k + 1] = eskf.predict(x_est[k], P_est[k], z_acceleration[k + 1], z_gyroscope[k + 1], 2, Ts_IMU[k + 1])# TODO
 
     if eskf.debug:
         assert np.all(np.isfinite(P_pred[k])), f"Not finite P_pred at index {k + 1}"
@@ -203,7 +203,10 @@ for k in tqdm(range(N)):
 
 # %% Plots
 
-fig1 = plt.figure(1)
+plot_save_path = "./plots/real/"
+save_plots : bool = True
+
+fig1 = plt.figure(1, figsize=(10, 10))
 ax = plt.axes(projection='3d')
 
 ax.plot3D(x_est[0:N, 1], x_est[0:N, 0], -x_est[0:N, 2])
@@ -215,11 +218,16 @@ ax.legend(["Estimated", "GNSS"])
 
 plt.grid()
 
+if save_plots:
+    plt.savefig(plot_save_path + "traj_real.pdf", format="pdf")
+
+
+
 # state estimation
 t = np.linspace(0, dt*(N-1), N)
 eul = np.apply_along_axis(quaternion_to_euler, 1, x_est[:N, ATT_IDX])
 
-fig2, axs2 = plt.subplots(5, 1)
+fig2, axs2 = plt.subplots(5, 1, figsize=(10, 10))
 
 axs2[0].plot(t, x_est[0:N, POS_IDX])
 axs2[0].set(ylabel='NED position [m]')
@@ -248,11 +256,15 @@ plt.grid()
 
 fig2.suptitle('States estimates')
 
+if save_plots:
+    plt.savefig(plot_save_path + "state_estimates_real.pdf", format="pdf")
+
+
 # %% Consistency
 confprob = 0.95
 CI3 = np.array(scipy.stats.chi2.interval(confprob, 3)).reshape((2, 1))
 
-fig3 = plt.figure()
+fig3 = plt.figure(figsize=(10, 10))
 
 plt.plot(NIS[:GNSSk])
 plt.plot(np.array([0, N-1]) * dt, (CI3@np.ones((1, 2))).T)
@@ -260,13 +272,21 @@ insideCI = np.mean((CI3[0] <= NIS[:N]) * (NIS[:N] <= CI3[1]))
 plt.title(f'NIS ({100 *  insideCI:.1f} inside {100 * confprob} confidence interval)')
 plt.grid()
 
+if save_plots:
+    plt.savefig(plot_save_path + "NIS_real.pdf", format="pdf")
+
+
 # %% box plots
-fig4 = plt.figure()
+fig4 = plt.figure(figsize=(10, 10))
 
 gauss_compare = np.sum(np.random.randn(3, GNSSk)**2, axis=0)
 plt.boxplot([NIS[0:GNSSk], gauss_compare], notch=True)
 plt.legend('NIS', 'gauss')
 plt.grid()
+
+if save_plots:
+    plt.savefig(plot_save_path + "box_real.pdf", format="pdf")
+
 
 # %%
 plt.show()
