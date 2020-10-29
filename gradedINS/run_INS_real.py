@@ -176,7 +176,7 @@ P_pred[0][ERR_GYRO_BIAS_IDX**2] = (1e-3)**2 * np.eye(3)
 
 # %% Run estimation
 
-N = 75000 #steps
+N = 7500 #steps
 GNSSk = 0
 
 for k in tqdm(range(N)):
@@ -204,7 +204,7 @@ for k in tqdm(range(N)):
 # %% Plots
 
 plot_save_path = "./plots/real/"
-save_plots : bool = True
+save_plots : bool = False
 
 fig1 = plt.figure(1, figsize=(10, 10))
 ax = plt.axes(projection='3d')
@@ -263,6 +263,9 @@ if save_plots:
 # %% Consistency
 confprob = 0.95
 CI3 = np.array(scipy.stats.chi2.interval(confprob, 3)).reshape((2, 1))
+
+ANIS = np.mean(NIS)
+print(f"ANIS = {ANIS:.2f} with CI = [{CI3[0][0]:.2f}, {CI3[1][0]:.2f}]")
 
 fig3 = plt.figure(figsize=(10, 10))
 

@@ -22,7 +22,7 @@ except Exception as e:
     def tqdm(iterable, *args, **kwargs):
         return iterable
 
-from eskf import (
+from eskf_peter import (
     ESKF,
     POS_IDX,
     VEL_IDX,
@@ -93,7 +93,9 @@ filename_to_load = "task_simulation.mat"
 loaded_data = scipy.io.loadmat(filename_to_load)
 
 S_a = loaded_data["S_a"]
+S_a = np.eye(len(S_a)) # For 3c
 S_g = loaded_data["S_g"]
+S_g = np.eye(len(S_g)) # For #c
 lever_arm = loaded_data["leverarm"].ravel()
 timeGNSS = loaded_data["timeGNSS"].ravel()
 timeIMU = loaded_data["timeIMU"].ravel()
@@ -214,7 +216,7 @@ for k in tqdm.trange(N):
     ) = eskf.NEESes(x_est[k], P_est[k], x_true[k])
 
     if k < N - 1:
-        x_pred[k + 1], P_pred[k + 1] = eskf.predict(x_est[k], P_est[k], z_acceleration[k+1], z_gyroscope[k+1], Ts_IMU[k+1])
+        x_pred[k + 1], P_pred[k + 1] = eskf.predict(x_est[k], P_est[k], z_acceleration[k+1], z_gyroscope[k+1], 2, Ts_IMU[k+1])
 
 
     if eskf.debug:
@@ -223,10 +225,10 @@ for k in tqdm.trange(N):
 
 # %% Plots
 plot_save_path = "./plots/simulated/"
-save_plots : bool = False
+save_plots : bool = True
 
 
-fig1 = plt.figure(1)
+fig1 = plt.figure(1, figsize=(10,10))
 ax = plt.axes(projection="3d")
 
 ax.plot3D(x_est[:N, 1], x_est[:N, 0], -x_est[:N, 2])
@@ -244,7 +246,7 @@ t = np.linspace(0, dt * (N - 1), N)
 eul = np.apply_along_axis(quaternion_to_euler, 1, x_est[:N, ATT_IDX])
 eul_true = np.apply_along_axis(quaternion_to_euler, 1, x_true[:N, ATT_IDX])
 
-fig2, axs2 = plt.subplots(5, 1, num=2, clear=True)
+fig2, axs2 = plt.subplots(5, 1, num=2, clear=True, figsize=(10,10))
 
 axs2[0].plot(t, x_est[:N, POS_IDX])
 axs2[0].set(ylabel="NED position [m]")
@@ -277,7 +279,7 @@ if save_plots:
     plt.savefig(plot_save_path + "state_est_sim.pdf", format="pdf")
 
 # state error plots
-fig3, axs3 = plt.subplots(5, 1, num=3, clear=True)
+fig3, axs3 = plt.subplots(5, 1, num=3, clear=True, figsize=(10,10))
 delta_x_RMSE = np.sqrt(np.mean(delta_x[:N] ** 2, axis=0))  # TODO use this in legends
 axs3[0].plot(t, delta_x[:N, POS_IDX])
 axs3[0].set(ylabel="NED position error [m]")
@@ -337,7 +339,7 @@ if save_plots:
     plt.savefig(plot_save_path + "errstate_est_sim.pdf", format="pdf")
 
 # Error distance plot
-fig4, axs4 = plt.subplots(2, 1, num=4, clear=True)
+fig4, axs4 = plt.subplots(2, 1, num=4, clear=True, figsize=(10,10))
 
 axs4[0].plot(t, np.linalg.norm(delta_x[:N, POS_IDX], axis=1))
 axs4[0].plot(
@@ -364,7 +366,7 @@ confprob = 0.95
 CI15 = np.array(scipy.stats.chi2.interval(confprob, 15)).reshape((2, 1))
 CI3 = np.array(scipy.stats.chi2.interval(confprob, 3)).reshape((2, 1))
 
-fig5, axs5 = plt.subplots(7, 1, num=5, clear=True)
+fig5, axs5 = plt.subplots(7, 1, num=5, clear=True, figsize=(10,10))
 
 axs5[0].plot(t, (NEES_all[:N]).T)
 axs5[0].plot(np.array([0, N - 1]) * dt, (CI15 @ np.ones((1, 2))).T)
@@ -427,7 +429,7 @@ if save_plots:
 
 
 # boxplot
-fig6, axs6 = plt.subplots(1, 3)
+fig6, axs6 = plt.subplots(1, 3, figsize=(10,10))
 
 gauss_compare = np.sum(np.random.randn(3, GNSSk)**2, axis=0)
 axs6[0].boxplot([NIS[0:GNSSk], gauss_compare], notch=True)
@@ -444,7 +446,22 @@ axs6[2].boxplot([NEES_pos[0:N].T, NEES_vel[0:N].T, NEES_att[0:N].T, NEES_accbias
 axs6[2].legend(['NEES pos', 'NEES vel', 'NEES att', 'NEES accbias', 'NEES gyrobias', 'gauss (3 dim)'])
 plt.grid()
 if save_plots:
-    plt.savefig(plot_save_path + "BOX_sim.pdf", format="pdf")
+    plt.savefig(plot_save_path + "BOX_sim.pdf", format="pdf",)
+
+
+ANEES_tot = np.mean(NEES_all[:N])
+ANEES_pos = np.mean(NEES_pos[:N])
+ANEES_vel = np.mean(NEES_vel[:N])
+ANEES_att = np.mean(NEES_att[:N])
+ANEES_acc_bias = np.mean(NEES_acc_bias[:N])
+ANEES_gyro_bias = np.mean(NEES_gyro_bias[:N])
+
+print(f"{ANEES_tot=}")
+print(f"{ANEES_pos=}")
+print(f"{ANEES_vel=}")
+print(f"{ANEES_att=}")
+print(f"{ANEES_acc_bias=}")
+print(f"{ANEES_gyro_bias=}")
 
 
 plt.show()
