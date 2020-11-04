@@ -175,17 +175,17 @@ class EKFSLAM:
         # Numpy broadcasts size 1 dimensions to any size when needed
         # TODO, relative position of landmark to sensor on robot in world frame
         # mi − ρk − R(ψk)L. Where ρk = x[:2], mi = m, R(ψk) = Rot, L = self.sensor_offset
-        delta_m = np.array([mi - x[:2] - Rot @ self.sensor_offset for mi in m]) # Må gjøres for hver m^i?
+        delta_m = m - x[:2] - Rot @ self.sensor_offset
 
         # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
-        zpredcart = np.array([Rot @ delta_m_i for delta_m_i in delta_m])
+        zpredcart = Rot @ delta_m
 
         # TODO, ranges
-        zpred_r = la.norm(zpredcart)
+        zpred_r = la.norm(zpredcart, axis=0)
         # TODO, bearings
-        zpred_theta = np.array([np.arctan2(delta_m_i[0], delta_m_i[1]) for delta_m_i in delta_m])
+        zpred_theta = np.arctan2(delta_m[:,1], delta_m[:,0])
         # TODO, the two arrays above stacked on top of each other vertically like
-        zpred = np.stack(zpred_r, zpred_theta)
+        zpred = np.vstack(zpred_r, zpred_theta)
         # [ranges;
         #  bearings]
         # into shape (2, #lmrk)
@@ -219,16 +219,20 @@ class EKFSLAM:
 
         Rot = rotmat2d(x[2])
 
-        delta_m = # TODO, relative position of landmark to robot in world frame. m - rho that appears in (11.15) and (11.16)
+        # TODO, relative position of landmark to robot in world frame. m - rho that appears in (11.15) and (11.16)
+        delta_m = m - x[:2]
 
-        zc = # TODO, (2, #measurements), each measured position in cartesian coordinates like
+        # TODO, (2, #measurements), each measured position in cartesian coordinates like
+        zc = Rot @ delta_m
         # [x coordinates;
         #  y coordinates]
 
-        zpred = # TODO (2, #measurements), predicted measurements, like
+        # TODO (2, #measurements), predicted measurements, like
+        zpred = self.h(eta)
         # [ranges;
         #  bearings]
-        zr = # TODO, ranges
+        # TODO, ranges
+        zr = zpred[::2] #? Studassmat [range1, bearing1, range2, ...] eller [range1, range2, range3, ...., bearing1,...]
 
         Rpihalf = rotmat2d(np.pi / 2)
 
