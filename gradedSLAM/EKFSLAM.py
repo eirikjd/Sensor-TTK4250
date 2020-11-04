@@ -44,7 +44,7 @@ class EKFSLAM:
         np.ndarray, shape = (3,)
             the predicted state
         """
-        
+
         heading = utils.wrapToPi(x[2]) #eq (11.7). Should wrap heading angle between (-pi, pi), see utils.wrapToPi
         xpred = np.zeros(3,)
         xpred[0] = x[0] + u[0]*np.cos(heading_wrapped) - u[1]*np.sin(heading_wrapped)
@@ -125,22 +125,22 @@ class EKFSLAM:
             eta.shape * 2 == P.shape
         ), "EKFSLAM.predict: input eta and P shape do not match"
         etapred = np.empty_like(eta)
-        
+
         x = eta[:3]
         etapred[:3] = self.f(x,z_odo)
-        etapred[3:] = eta[3:] 
-          
+        etapred[3:] = eta[3:]
+
         Fx = self.Fx(x,z_odo)
         Fu = self.Fu(x,z_odo)
-        
+
         # evaluate covariance prediction in place to save computation
         # only robot state changes, so only rows and colums of robot state needs changing
         # cov matrix layout:
         # [[P_xx, P_xm],
         # [P_mx, P_mm]]
         P[:3, :3] = Fx @ P[:3, :3] @ Fx.T  + self.Q[:3, .3] #litt usikker
-        P[:3, 3:] = Fx @ P[:3, 3:]   
-        P[3:, :3] = P[:3, 3:].T 
+        P[:3, 3:] = Fx @ P[:3, 3:]
+        P[3:, :3] = P[:3, 3:].T
 
         assert np.allclose(P, P.T), "EKFSLAM.predict: not symmetric P"
         assert np.all(
@@ -173,14 +173,20 @@ class EKFSLAM:
 
         # None as index ads an axis with size 1 at that position.
         # Numpy broadcasts size 1 dimensions to any size when needed
-        delta_m = # TODO, relative position of landmark to sensor on robot in world frame
+        # TODO, relative position of landmark to sensor on robot in world frame
+        # mi − ρk − R(ψk)L. Where ρk = x[:2], mi = m, R(ψk) = Rot, L = self.sensor_offset
+        delta_m = np.array([mi - x[:2] - Rot @ self.sensor_offset for mi in m]) # Må gjøres for hver m^i?
 
-        zpredcart = # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
+        # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
+        zpredcart = np.array([Rot @ delta_m_i for delta_m_i in delta_m])
 
-        zpred_r = # TODO, ranges
-        zpred_theta = # TODO, bearings
-        zpred = # TODO, the two arrays above stacked on top of each other vertically like 
-        # [ranges; 
+        # TODO, ranges
+        zpred_r = la.norm(zpredcart)
+        # TODO, bearings
+        zpred_theta = np.array([np.arctan2(delta_m_i[0], delta_m_i[1]) for delta_m_i in delta_m])
+        # TODO, the two arrays above stacked on top of each other vertically like
+        zpred = np.stack(zpred_r, zpred_theta)
+        # [ranges;
         #  bearings]
         # into shape (2, #lmrk)
 
