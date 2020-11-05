@@ -174,7 +174,7 @@ class EKFSLAM:
         # Numpy broadcasts size 1 dimensions to any size when needed
         # TODO, relative position of landmark to sensor on robot in world frame
         # mi − ρk − R(ψk)L. Where ρk = x[:2], mi = m, R(ψk) = Rot, L = self.sensor_offset
-        delta_m = m - x[:2] - rotmat2d(x[2]) @ self.sensor_offset
+        delta_m = m - x[:2].reshape(2,1) - (rotmat2d(x[2]) @ self.sensor_offset).reshape(2,1)
 
         # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
         zpredcart = Rot @ delta_m
@@ -182,9 +182,9 @@ class EKFSLAM:
         # TODO, ranges
         zpred_r = [la.norm(mi) for mi in delta_m.T]
         # TODO, bearings
-        zpred_theta = [np.arctan2(mi[:,1], mi[:,0]) for mi in delta_m.T]
+        zpred_theta = [np.arctan2(mi[1], mi[0]) for mi in delta_m.T]
         # TODO, the two arrays above stacked on top of each other vertically like
-        zpred = np.vstack(zpred_r, zpred_theta)
+        zpred = np.vstack([zpred_r, zpred_theta])
         # [ranges;
         #  bearings]
         # into shape (2, #lmrk)
@@ -219,7 +219,7 @@ class EKFSLAM:
         Rot = rotmat2d(x[2])
 
         # TODO, relative position of landmark to robot in world frame. m - rho that appears in (11.15) and (11.16)
-        delta_m = m - x[:2] - rotmat2d(x[2]) @ self.sensor_offset
+        delta_m = m - x[:2].reshape(2,1) - (rotmat2d(x[2]) @ self.sensor_offset).reshape(2,1)
 
         # TODO, (2, #measurements), each measured position in cartesian coordinates like
         zc = Rot @ delta_m
@@ -252,8 +252,8 @@ class EKFSLAM:
             inds = slice(ind, ind + 2)  # the inds slice for the ith landmark into H
 
             # TODO: Set H or Hx and Hm here
-            Hx[inds,:] = -1 * np.array([[delta_m.T / zr[i], 0], [delta_m.T / (zr[i] ** 2), 1]])
-            Hm[inds,inds] = (1 / zr[i] ** 2) * np.array([[zr[i] * delta_m.T], [delta_m.T @ Rpihalf]])
+            Hx[inds,:] = -1 * np.array([[*(delta_m[:,i].T / zr[i]), 0], [*(delta_m[:,i].T / (zr[i] ** 2)), 1]])
+            Hm[inds,inds] = (1 / zr[i] ** 2) * np.array([[*(zr[i] * delta_m[:,i].T)], [*delta_m[:,i].T @ Rpihalf]])
 
         # TODO: You can set some assertions here to make sure that some of the structure in H is correct
         return H
@@ -298,7 +298,7 @@ class EKFSLAM:
 
             # TODO, rotmat in Gz
             rot = rotmat2d(zj[1] + eta[2])
-            lmnew[inds] = eta[:2] + sensor_offset_world @ zj[0] #? studass
+            lmnew[inds] = eta[:2] + sensor_offset_world * zj[0] #? studass
             # x = range + cos(bearing + self.vinkel), y = x = range + sin(bearing + self.vinkel)?
 
             # TODO
@@ -306,20 +306,20 @@ class EKFSLAM:
             Gx[inds, 2] = zj @rot[:, 1] + sensor_offset_world_der
 
             # TODO
-            Gz = rot @ np.diag(1, zj[0])
+            Gz = rot @ np.diag([1, zj[0]])
 
             # TODO, Gz * R * Gz^T, transform measurement covariance from polar to cartesian coordinates
             Rall[inds, inds] = Gz @ self.R @ Gz.T
 
         assert len(lmnew) % 2 == 0, "SLAM.add_landmark: lmnew not even length"
         # TODO, append new landmarks to state vector
-        etaadded = np.concatenate(eta[:], lmnew)
+        etaadded = np.concatenate([eta[:], lmnew])
         # TODO, block diagonal of P_new, see problem text in 1g) in graded assignment 3
-        Padded = la.block_diag([P, Gx @ P[:3, :3] @ Gx.T + Gz @ Rall.T])
+        Padded = la.block_diag(P, Gx @ P[:3, :3] @ Gx.T + Rall.T)  #? Ikke transposed på den siste Gx her, ref øvingsteksten
         # TODO, top right corner of P_new
-        Padded[n:, :n] = P[:3] @ Gx.T
+        Padded[:n, n:] = P[:, :3] @ Gx.T
         # TODO, transpose of above. Should yield the same as calcualion, but this enforces symmetry and should be cheaper
-        Padded[:n, n:] = Padded[n:, :n].T
+        Padded[n:, :n] = Padded[:n, n:].T
 
         assert (
             etaadded.shape * 2 == Padded.shape
@@ -418,7 +418,10 @@ class EKFSLAM:
             # Here you can use simply np.kron (a bit slow) to form the big (very big in VP after a while) R,
             # or be smart with indexing and broadcasting (3d indexing into 2d mat) realizing you are adding the same R on all diagonals
             # TODO,
-            S = H @ P @ H.T + np.kron(self.R, numLmk)
+
+            hmm = [self.R for _ in range(numLmk)]
+
+            S = H @ P @ H.T + la.block_diag(*hmm)
             assert (
                 S.shape == zpred.shape * 2
             ), "EKFSLAM.update: wrong shape on either S or zpred"
@@ -441,7 +444,7 @@ class EKFSLAM:
                 # Kalman mean update
                 S_cho_factors = la.cho_factor(Sa) # Optional, used in places for S^-1, see scipy.linalg.cho_factor and scipy.linalg.cho_solve
                 # TODO, Kalman gain, can use S_cho_factors
-                W = P @ Ha.T @ la.cho_solve(Sa, np.ones(len(Sa)))
+                W = P @ Ha.T @ la.cho_solve(S_cho_factors, np.ones(len(Sa)))
                 # TODO, Kalman update
                 etaupd = eta + W @ v
 
@@ -476,7 +479,7 @@ class EKFSLAM:
                 z_new_inds[::2] = is_new_lmk
                 z_new_inds[1::2] = is_new_lmk
                 z_new = z[z_new_inds]
-                etaupd, Pupd, _, _ = self.update(eta, P, z_new)
+                etaupd, Pupd = self.add_landmarks(eta, P, z_new)
 
         assert np.allclose(Pupd, Pupd.T), "EKFSLAM.update: Pupd must be symmetric"
         assert np.all(np.linalg.eigvals(Pupd) >= 0), "EKFSLAM.update: Pupd must be PSD"

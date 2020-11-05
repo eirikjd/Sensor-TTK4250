@@ -102,7 +102,7 @@ R = np.diag([0.08**2, 0.02**2])
 doAsso = True
 
 JCBBalphas = np.array(
-    # TODO,
+    [0.7, 0.8]
 )  # first is for joint compatibility, second is individual
 # these can have a large effect on runtime either through the number of landmarks created
 # or by the size of the association search space.
@@ -137,7 +137,7 @@ if doAssoPlot:
     figAsso, axAsso = plt.subplots(num=1, clear=True)
 
 # %% Run simulation
-N = K
+N = 30
 
 print("starting sim (" + str(N) + " iterations)")
 
@@ -163,7 +163,7 @@ for k, z_k in tqdm(enumerate(z[:N])):
         NISnorm[k] = 1
         CInorm[k].fill(1)
 
-    NEESes[k] = EKFSLAM.NEESes(eta_hat[k], P_hat[k], poseGT[k]) #litt usikker
+    NEESes[k] = EKFSLAM.NEESes(eta_hat[k][:3], P_hat[k][:3, :3], poseGT[k]) #litt usikker
 
     if doAssoPlot and k > 0:
         axAsso.clear()
@@ -184,7 +184,7 @@ for k, z_k in tqdm(enumerate(z[:N])):
 print("sim complete")
 
 pose_est = np.array([x[:3] for x in eta_hat[:N]])
-lmk_est = [eta_hat_k[3:].reshape(-1, 2) for eta_hat_k in eta_hat]
+lmk_est = [eta_hat_k[3:].reshape(-1, 2) for eta_hat_k in eta_hat[:N]]
 lmk_est_final = lmk_est[N - 1]
 
 np.set_printoptions(precision=4, linewidth=100)
