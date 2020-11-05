@@ -253,7 +253,7 @@ class EKFSLAM:
 
             # TODO: Set H or Hx and Hm here
             Hx[inds,:] = -1 * np.array([[delta_m.T / zr[i], 0], [delta_m.T / (zr[i] ** 2), 1]])
-            Hm[inds,inds] = (1 / zr[i] ** 2) * np.array([[z[i] * delta_m.T], [delta_m.T @ Rpihalf]])
+            Hm[inds,inds] = (1 / zr[i] ** 2) * np.array([[zr[i] * delta_m.T], [delta_m.T @ Rpihalf]])
 
         # TODO: You can set some assertions here to make sure that some of the structure in H is correct
         return H
@@ -384,7 +384,8 @@ class EKFSLAM:
 
             return zass, zpredass, Hass, Sass, a
         else:
-            # should one do something her
+            # q: Should one do something here?
+            # a: No
             pass
 
     def update(
@@ -411,12 +412,13 @@ class EKFSLAM:
 
         if numLmk > 0:
             # Prediction and innovation covariance
-            zpred = #TODO
-            H = # TODO
+            zpred = self.h(eta)
+            H = self.H(eta)
 
             # Here you can use simply np.kron (a bit slow) to form the big (very big in VP after a while) R,
             # or be smart with indexing and broadcasting (3d indexing into 2d mat) realizing you are adding the same R on all diagonals
-            S = # TODO,
+            # TODO,
+            S = H @ P @ H.T + np.kron(self.R, numLmk)
             assert (
                 S.shape == zpred.shape * 2
             ), "EKFSLAM.update: wrong shape on either S or zpred"
@@ -427,8 +429,8 @@ class EKFSLAM:
 
             # No association could be made, so skip update
             if za.shape[0] == 0:
-                etaupd = # TODO
-                Pupd = # TODO
+                etaupd = eta
+                Pupd = P
                 NIS = 1 # TODO: beware this one when analysing consistency.
 
             else:
@@ -437,17 +439,21 @@ class EKFSLAM:
                 v[1::2] = utils.wrapToPi(v[1::2])
 
                 # Kalman mean update
-                # S_cho_factors = la.cho_factor(Sa) # Optional, used in places for S^-1, see scipy.linalg.cho_factor and scipy.linalg.cho_solve
-                W = # TODO, Kalman gain, can use S_cho_factors
-                etaupd = # TODO, Kalman update
+                S_cho_factors = la.cho_factor(Sa) # Optional, used in places for S^-1, see scipy.linalg.cho_factor and scipy.linalg.cho_solve
+                # TODO, Kalman gain, can use S_cho_factors
+                W = P @ Ha.T @ la.cho_solve(Sa, np.ones(len(Sa)))
+                # TODO, Kalman update
+                etaupd = eta + W @ v
 
                 # Kalman cov update: use Joseph form for stability
                 jo = -W @ Ha
                 jo[np.diag_indices(jo.shape[0])] += 1  # same as adding Identity mat
-                Pupd = # TODO, Kalman update. This is the main workload on VP after speedups
+                # TODO, Kalman update. This is the main workload on VP after speedups
+                Pupd = jo @ P #? Legg til randome tall her også sånn som i forrige øving? Tipper kanskje
 
                 # calculate NIS, can use S_cho_factors
-                NIS = # TODO
+                # TODO
+                NIS = v.T @ la.cho_solve(S_cho_factors, v)
 
                 # When tested, remove for speed
                 assert np.allclose(Pupd, Pupd.T), "EKFSLAM.update: Pupd not symmetric"
@@ -458,7 +464,7 @@ class EKFSLAM:
         else:  # All measurements are new landmarks,
             a = np.full(z.shape[0], -1)
             z = z.flatten()
-            NIS = 0 # TODO: beware this one, you can change the value to for instance 1
+            NIS = 1 # TODO: beware this one, you can change the value to for instance 1
             etaupd = eta
             Pupd = P
 
@@ -470,7 +476,7 @@ class EKFSLAM:
                 z_new_inds[::2] = is_new_lmk
                 z_new_inds[1::2] = is_new_lmk
                 z_new = z[z_new_inds]
-                etaupd, Pupd = # TODO, add new landmarks.
+                etaupd, Pupd, _, _ = self.update(eta, P, z_new)
 
         assert np.allclose(Pupd, Pupd.T), "EKFSLAM.update: Pupd must be symmetric"
         assert np.all(np.linalg.eigvals(Pupd) >= 0), "EKFSLAM.update: Pupd must be PSD"
