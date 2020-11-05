@@ -113,8 +113,8 @@ gnss_steps = len(z_GNSS)
 # IMU noise values for STIM300, based on datasheet and simulation sample rate
 # Continous noise
 # TODO: What to remove here?
-cont_gyro_noise_std = 4.36e-5  # (rad/s)/sqrt(Hz)
-cont_acc_noise_std = 1.167e-3  # (m/s**2)/sqrt(Hz)
+cont_gyro_noise_std = 4.36e-5*3  # (rad/s)/sqrt(Hz)
+cont_acc_noise_std = 1.167e-3*3  # (m/s**2)/sqrt(Hz)
 
 # Discrete sample noise at simulation rate used
 rate_std = 0.5 * cont_gyro_noise_std * np.sqrt(1 / dt)
@@ -246,7 +246,7 @@ t = np.linspace(0, dt * (N - 1), N)
 eul = np.apply_along_axis(quaternion_to_euler, 1, x_est[:N, ATT_IDX])
 eul_true = np.apply_along_axis(quaternion_to_euler, 1, x_true[:N, ATT_IDX])
 
-fig2, axs2 = plt.subplots(5, 1, num=2, clear=True, figsize=(10,10))
+fig2, axs2 = plt.subplots(5, 1, num=2, clear=True, figsize=(10,15))
 
 axs2[0].plot(t, x_est[:N, POS_IDX])
 axs2[0].set(ylabel="NED position [m]")
@@ -274,7 +274,7 @@ axs2[4].legend(["$x$", "$y$", "$z$"])
 
 
 
-fig2.suptitle("States estimates")
+# fig2.suptitle("States estimates")
 if save_plots:
     plt.savefig(plot_save_path + "state_est_sim.pdf", format="pdf")
 
@@ -282,22 +282,22 @@ if save_plots:
 fig3, axs3 = plt.subplots(5, 1, num=3, clear=True, figsize=(10,10))
 delta_x_RMSE = np.sqrt(np.mean(delta_x[:N] ** 2, axis=0))  # TODO use this in legends
 axs3[0].plot(t, delta_x[:N, POS_IDX])
-axs3[0].set(ylabel="NED position error [m]")
+axs3[0].set(ylabel="NED position [m]")
 axs3[0].legend(
     [
-        f"North ({np.sqrt(np.mean(delta_x[:N, 0]**2))})",
-        f"East ({np.sqrt(np.mean(delta_x[:N, 1]**2))})",
-        f"Down ({np.sqrt(np.mean(delta_x[:N, 2]**2))})",
+        f"North",
+        f"East",
+        f"Down",
     ]
 )
 
 axs3[1].plot(t, delta_x[:N, VEL_IDX])
-axs3[1].set(ylabel="Velocities error [m]")
+axs3[1].set(ylabel="Velocities [m]")
 axs3[1].legend(
     [
-        f"North ({np.sqrt(np.mean(delta_x[:N, 3]**2))})",
-        f"East ({np.sqrt(np.mean(delta_x[:N, 4]**2))})",
-        f"Down ({np.sqrt(np.mean(delta_x[:N, 5]**2))})",
+        f"North",
+        f"East",
+        f"Down",
     ]
 )
 
@@ -305,36 +305,36 @@ axs3[1].legend(
 wrap_to_pi = lambda rads: (rads + np.pi) % (2 * np.pi) - np.pi
 eul_error = wrap_to_pi(eul[:N] - eul_true[:N]) * 180 / np.pi
 axs3[2].plot(t, eul_error)
-axs3[2].set(ylabel="Euler angles error [deg]")
+axs3[2].set(ylabel="Euler angles [deg]")
 axs3[2].legend(
     [
-        rf"$\phi$ ({np.sqrt(np.mean((eul_error[:N, 0] * 180 / np.pi)**2))})",
-        rf"$\theta$ ({np.sqrt(np.mean((eul_error[:N, 1] * 180 / np.pi)**2))})",
-        rf"$\psi$ ({np.sqrt(np.mean((eul_error[:N, 2] * 180 / np.pi)**2))})",
+        rf"$\phi$",
+        rf"$\theta$",
+        rf"$\psi$",
     ]
 )
 
 axs3[3].plot(t, delta_x[:N, ERR_ACC_BIAS_IDX])
-axs3[3].set(ylabel="Accl bias error [m/s^2]")
+axs3[3].set(ylabel="Accl bias [m/s^2]")
 axs3[3].legend(
     [
-        f"$x$ ({np.sqrt(np.mean(delta_x[:N, 9]**2))})",
-        f"$y$ ({np.sqrt(np.mean(delta_x[:N, 10]**2))})",
-        f"$z$ ({np.sqrt(np.mean(delta_x[:N, 11]**2))})",
+        f"$x$",
+        f"$y$",
+        f"$z$",
     ]
 )
 
 axs3[4].plot(t, delta_x[:N, ERR_GYRO_BIAS_IDX] * 180 / np.pi)
-axs3[4].set(ylabel="Gyro bias error [deg/s]")
+axs3[4].set(ylabel="Gyro bias [deg/s]")
 axs3[4].legend(
     [
-        f"$x$ ({np.sqrt(np.mean((delta_x[:N, 12]* 180 / np.pi)**2))})",
-        f"$y$ ({np.sqrt(np.mean((delta_x[:N, 13]* 180 / np.pi)**2))})",
-        f"$z$ ({np.sqrt(np.mean((delta_x[:N, 14]* 180 / np.pi)**2))})",
+        f"$x$",
+        f"$y$",
+        f"$z$",
     ]
 )
 
-fig3.suptitle("States estimate errors")
+# fig3.suptitle("States estimate errors")
 if save_plots:
     plt.savefig(plot_save_path + "errstate_est_sim.pdf", format="pdf")
 
@@ -366,7 +366,7 @@ confprob = 0.95
 CI15 = np.array(scipy.stats.chi2.interval(confprob, 15)).reshape((2, 1))
 CI3 = np.array(scipy.stats.chi2.interval(confprob, 3)).reshape((2, 1))
 
-fig5, axs5 = plt.subplots(7, 1, num=5, clear=True, figsize=(10,10))
+fig5, axs5 = plt.subplots(7, 1, num=5, clear=True, figsize=(10,20))
 
 axs5[0].plot(t, (NEES_all[:N]).T)
 axs5[0].plot(np.array([0, N - 1]) * dt, (CI15 @ np.ones((1, 2))).T)

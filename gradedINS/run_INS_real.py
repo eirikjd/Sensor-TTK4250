@@ -176,7 +176,7 @@ P_pred[0][ERR_GYRO_BIAS_IDX**2] = (1e-3)**2 * np.eye(3)
 
 # %% Run estimation
 
-N = 7500 #steps
+N = steps #steps
 GNSSk = 0
 
 for k in tqdm(range(N)):
@@ -204,7 +204,7 @@ for k in tqdm(range(N)):
 # %% Plots
 
 plot_save_path = "./plots/real/"
-save_plots : bool = False
+save_plots : bool = True
 
 fig1 = plt.figure(1, figsize=(10, 10))
 ax = plt.axes(projection='3d')
@@ -230,31 +230,31 @@ eul = np.apply_along_axis(quaternion_to_euler, 1, x_est[:N, ATT_IDX])
 fig2, axs2 = plt.subplots(5, 1, figsize=(10, 10))
 
 axs2[0].plot(t, x_est[0:N, POS_IDX])
-axs2[0].set(ylabel='NED position [m]')
-axs2[0].legend(['North', 'East', 'Down'])
+axs2[0].set_ylabel('NED position [m]')
+axs2[0].legend(['North', 'East', 'Down'], loc='upper right')
 plt.grid()
 
 axs2[1].plot(t, x_est[0:N, VEL_IDX])
-axs2[1].set(ylabel='Velocities [m/s]')
-axs2[1].legend(['North', 'East', 'Down'])
+axs2[1].set_ylabel('Velocities [m/s]')
+axs2[1].legend(['North', 'East', 'Down'], loc='upper right')
 plt.grid()
 
 axs2[2].plot(t, eul[0:N] * 180 / np.pi)
-axs2[2].set(ylabel='Euler angles [deg]')
-axs2[2].legend(['\phi', '\theta', '\psi'])
+axs2[2].set_ylabel('Euler angles [deg]')
+axs2[2].legend(['\phi', '\theta', '\psi'], loc='upper right')
 plt.grid()
 
 axs2[3].plot(t, x_est[0:N, ACC_BIAS_IDX])
-axs2[3].set(ylabel='Accl bias [m/s^2]')
-axs2[3].legend(['x', 'y', 'z'])
+axs2[3].set_ylabel('Accl bias [m/s^2]')
+axs2[3].legend(['x', 'y', 'z'], loc='upper right')
 plt.grid()
 
 axs2[4].plot(t, x_est[0:N, GYRO_BIAS_IDX] * 180 / np.pi * 3600)
-axs2[4].set(ylabel='Gyro bias [deg/h]')
-axs2[4].legend(['x', 'y', 'z'])
+axs2[4].set_ylabel('Gyro bias [deg/h]')
+axs2[4].legend(['x', 'y', 'z'], loc='upper right')
 plt.grid()
 
-fig2.suptitle('States estimates')
+# fig2.suptitle('States estimates')
 
 if save_plots:
     plt.savefig(plot_save_path + "state_estimates_real.pdf", format="pdf")
@@ -263,9 +263,11 @@ if save_plots:
 # %% Consistency
 confprob = 0.95
 CI3 = np.array(scipy.stats.chi2.interval(confprob, 3)).reshape((2, 1))
+CI3N = np.array(scipy.stats.chi2.interval(confprob, 3 * N)) / N
+
 
 ANIS = np.mean(NIS)
-print(f"ANIS = {ANIS:.2f} with CI = [{CI3[0][0]:.2f}, {CI3[1][0]:.2f}]")
+print(f"ANIS = {ANIS:.2f} with CI = [{CI3N[0]:.2f}, {CI3N[1]:.2f}]")
 
 fig3 = plt.figure(figsize=(10, 10))
 
@@ -285,10 +287,31 @@ fig4 = plt.figure(figsize=(10, 10))
 gauss_compare = np.sum(np.random.randn(3, GNSSk)**2, axis=0)
 plt.boxplot([NIS[0:GNSSk], gauss_compare], notch=True)
 plt.legend('NIS', 'gauss')
+axes = plt.gca()
+plt.ylim((-5, 20))
 plt.grid()
 
 if save_plots:
     plt.savefig(plot_save_path + "box_real.pdf", format="pdf")
+
+
+# state estimation
+fig5 = plt.figure(figsize=(10, 5))
+
+plt.plot(t, x_est[0:N, ACC_BIAS_IDX])
+# plt.title('Accl bias [m/s^2]')
+plt.legend(['x', 'y', 'z'], loc='upper right')
+plt.grid()
+
+# fig5.plot(t, x_est[0:N, GYRO_BIAS_IDX] * 180 / np.pi * 3600)
+# fig5.set_ylabel('Gyro bias [deg/h]')
+# fig5.legend(['x', 'y', 'z'], loc='upper right')
+# plt.grid()
+
+# fig2.suptitle('States estimates')
+
+if save_plots:
+    plt.savefig(plot_save_path + "acc_bias.pdf", format="pdf")
 
 
 # %%

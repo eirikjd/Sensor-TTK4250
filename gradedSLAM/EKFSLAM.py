@@ -45,11 +45,10 @@ class EKFSLAM:
             the predicted state
         """
 
-        heading = utils.wrapToPi(x[2]) #eq (11.7). Should wrap heading angle between (-pi, pi), see utils.wrapToPi
         xpred = np.zeros(3,)
-        xpred[0] = x[0] + u[0]*np.cos(heading_wrapped) - u[1]*np.sin(heading_wrapped)
-        xpred[1] = x[1] + u[0]*np.sin(heading_wrapped) + u[1]*np.cos(heading_wrapped)
-        xpred[2] = x[2] + u[2]
+        xpred[0] = x[0] + u[0]*np.cos(x[2]) - u[1]*np.sin(x[2])
+        xpred[1] = x[1] + u[0]*np.sin(x[2]) + u[1]*np.cos(x[2])
+        xpred[2] = utils.wrapToPi(x[2] + u[2]) #eq (11.7). Should wrap heading angle between (-pi, pi), see utils.wrapToPi
         assert xpred.shape == (3,), "EKFSLAM.f: wrong shape for xpred"
         return xpred
 
@@ -69,8 +68,8 @@ class EKFSLAM:
             The Jacobian of f wrt. x.
         """
         Fx = np.eye(3) # eq (11.13)
-        Fx[0, 1] = -u[0]*np.sin(x[2]) - u[1]*np.cos(x[2]) #legge til wraptopi?
-        Fx[0, 2] = u[0]*np.cos(x[2]) - u[1]*np.sin(x[2])
+        Fx[0, 2] = -u[0]*np.sin(x[2]) - u[1]*np.cos(x[2]) #legge til wraptopi?
+        Fx[1, 2] = u[0]*np.cos(x[2]) - u[1]*np.sin(x[2])
         assert Fx.shape == (3, 3), "EKFSLAM.Fx: wrong shape"
         return Fx
 
@@ -138,7 +137,7 @@ class EKFSLAM:
         # cov matrix layout:
         # [[P_xx, P_xm],
         # [P_mx, P_mm]]
-        P[:3, :3] = Fx @ P[:3, :3] @ Fx.T  + self.Q[:3, .3] #litt usikker
+        P[:3, :3] = Fx @ P[:3, :3] @ Fx.T  + self.Q
         P[:3, 3:] = Fx @ P[:3, 3:]
         P[3:, :3] = P[:3, 3:].T
 
@@ -175,15 +174,15 @@ class EKFSLAM:
         # Numpy broadcasts size 1 dimensions to any size when needed
         # TODO, relative position of landmark to sensor on robot in world frame
         # mi − ρk − R(ψk)L. Where ρk = x[:2], mi = m, R(ψk) = Rot, L = self.sensor_offset
-        delta_m = m - x[:2] - Rot @ self.sensor_offset
+        delta_m = m - x[:2] - rotmat2d(x[2]) @ self.sensor_offset
 
         # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
         zpredcart = Rot @ delta_m
 
         # TODO, ranges
-        zpred_r = la.norm(zpredcart, axis=0)
+        zpred_r = [la.norm(mi) for mi in delta_m.T]
         # TODO, bearings
-        zpred_theta = np.arctan2(delta_m[:,1], delta_m[:,0])
+        zpred_theta = [np.arctan2(mi[:,1], mi[:,0]) for mi in delta_m.T]
         # TODO, the two arrays above stacked on top of each other vertically like
         zpred = np.vstack(zpred_r, zpred_theta)
         # [ranges;
@@ -220,7 +219,7 @@ class EKFSLAM:
         Rot = rotmat2d(x[2])
 
         # TODO, relative position of landmark to robot in world frame. m - rho that appears in (11.15) and (11.16)
-        delta_m = m - x[:2]
+        delta_m = m - x[:2] - rotmat2d(x[2]) @ self.sensor_offset
 
         # TODO, (2, #measurements), each measured position in cartesian coordinates like
         zc = Rot @ delta_m
@@ -232,7 +231,7 @@ class EKFSLAM:
         # [ranges;
         #  bearings]
         # TODO, ranges
-        zr = zpred[::2] #? Studassmat [range1, bearing1, range2, ...] eller [range1, range2, range3, ...., bearing1,...]
+        zr = zpred[::2]
 
         Rpihalf = rotmat2d(np.pi / 2)
 
@@ -253,6 +252,8 @@ class EKFSLAM:
             inds = slice(ind, ind + 2)  # the inds slice for the ith landmark into H
 
             # TODO: Set H or Hx and Hm here
+            Hx[inds,:] = -1 * np.array([[delta_m.T / zr[i], 0], [delta_m.T / (zr[i] ** 2), 1]])
+            Hm[inds,inds] = (1 / zr[i] ** 2) * np.array([[z[i] * delta_m.T], [delta_m.T @ Rpihalf]])
 
         # TODO: You can set some assertions here to make sure that some of the structure in H is correct
         return H
@@ -295,21 +296,30 @@ class EKFSLAM:
             inds = slice(ind, ind + 2)
             zj = z[inds]
 
-            rot = # TODO, rotmat in Gz
-            lmnew[inds] = # TODO, calculate position of new landmark in world frame
+            # TODO, rotmat in Gz
+            rot = rotmat2d(zj[1] + eta[2])
+            lmnew[inds] = eta[:2] + sensor_offset_world @ zj[0] #? studass
+            # x = range + cos(bearing + self.vinkel), y = x = range + sin(bearing + self.vinkel)?
 
-            Gx[inds, :2] = # TODO
-            Gx[inds, 2] = # TODO
+            # TODO
+            Gx[inds, :2] = I2
+            Gx[inds, 2] = zj @rot[:, 1] + sensor_offset_world_der
 
-            Gz = # TODO
+            # TODO
+            Gz = rot @ np.diag(1, zj[0])
 
-            Rall[inds, inds] = # TODO, Gz * R * Gz^T, transform measurement covariance from polar to cartesian coordinates
+            # TODO, Gz * R * Gz^T, transform measurement covariance from polar to cartesian coordinates
+            Rall[inds, inds] = Gz @ self.R @ Gz.T
 
         assert len(lmnew) % 2 == 0, "SLAM.add_landmark: lmnew not even length"
-        etaadded = # TODO, append new landmarks to state vector
-        Padded = # TODO, block diagonal of P_new, see problem text in 1g) in graded assignment 3
-        Padded[n:, :n] = # TODO, top right corner of P_new
-        Padded[:n, n:] = # TODO, transpose of above. Should yield the same as calcualion, but this enforces symmetry and should be cheaper
+        # TODO, append new landmarks to state vector
+        etaadded = np.concatenate(eta[:], lmnew)
+        # TODO, block diagonal of P_new, see problem text in 1g) in graded assignment 3
+        Padded = la.block_diag([P, Gx @ P[:3, :3] @ Gx.T + Gz @ Rall.T])
+        # TODO, top right corner of P_new
+        Padded[n:, :n] = P[:3] @ Gx.T
+        # TODO, transpose of above. Should yield the same as calcualion, but this enforces symmetry and should be cheaper
+        Padded[:n, n:] = Padded[n:, :n].T
 
         assert (
             etaadded.shape * 2 == Padded.shape
