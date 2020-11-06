@@ -174,15 +174,15 @@ class EKFSLAM:
         # Numpy broadcasts size 1 dimensions to any size when needed
         # TODO, relative position of landmark to sensor on robot in world frame
         # mi − ρk − R(ψk)L. Where ρk = x[:2], mi = m, R(ψk) = Rot, L = self.sensor_offset
-        delta_m = m - x[:2].reshape(2,1) - (rotmat2d(x[2]) @ self.sensor_offset).reshape(2,1)
+        delta_m = np.array([mi - x[:2] - (rotmat2d(x[2]) @ self.sensor_offset) for mi in m.T])
 
         # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
-        zpredcart = Rot @ delta_m
+        zpredcart = np.array([Rot @ delta_mi for delta_mi in delta_m])
 
         # TODO, ranges
-        zpred_r = [la.norm(mi) for mi in delta_m.T]
+        zpred_r = np.array([la.norm(mi) for mi in delta_m])
         # TODO, bearings
-        zpred_theta = [np.arctan2(mi[1], mi[0]) for mi in delta_m.T]
+        zpred_theta = np.array([np.arctan2(mi[1], mi[0]) for mi in delta_m])
         # TODO, the two arrays above stacked on top of each other vertically like
         zpred = np.vstack([zpred_r, zpred_theta])
         # [ranges;
@@ -212,11 +212,11 @@ class EKFSLAM:
         # extract states and map
         x = eta[0:3]
         ## reshape map (2, #landmarks), m[j] is the jth landmark
-        m = eta[3:].reshape((-1, 2)).T
+        m = eta[3:].reshape((-1, 2)).T #? Copy paste fra h(.)
 
         numM = m.shape[1]
 
-        Rot = rotmat2d(x[2])
+        Rot = rotmat2d(-x[2])
 
         # TODO, relative position of landmark to robot in world frame. m - rho that appears in (11.15) and (11.16)
         delta_m = m - x[:2].reshape(2,1) - (rotmat2d(x[2]) @ self.sensor_offset).reshape(2,1)
@@ -303,7 +303,7 @@ class EKFSLAM:
 
             # TODO
             Gx[inds, :2] = I2
-            Gx[inds, 2] = zj @rot[:, 1] + sensor_offset_world_der
+            Gx[inds, 2] = zj[0] * rot[:, 1] + sensor_offset_world_der
 
             # TODO
             Gz = rot @ np.diag([1, zj[0]])
@@ -313,11 +313,11 @@ class EKFSLAM:
 
         assert len(lmnew) % 2 == 0, "SLAM.add_landmark: lmnew not even length"
         # TODO, append new landmarks to state vector
-        etaadded = np.concatenate([eta[:], lmnew])
+        etaadded = np.concatenate([eta[:], lmnew]) #? State eller pose vector?
         # TODO, block diagonal of P_new, see problem text in 1g) in graded assignment 3
         Padded = la.block_diag(P, Gx @ P[:3, :3] @ Gx.T + Rall.T)  #? Ikke transposed på den siste Gx her, ref øvingsteksten
         # TODO, top right corner of P_new
-        Padded[:n, n:] = P[:, :3] @ Gx.T
+        Padded[:n, n:] = P[:, :3] @ Gx.T #? Har endra index her for å få top right
         # TODO, transpose of above. Should yield the same as calcualion, but this enforces symmetry and should be cheaper
         Padded[n:, :n] = Padded[:n, n:].T
 
@@ -454,7 +454,7 @@ class EKFSLAM:
                 # TODO, Kalman update. This is the main workload on VP after speedups
                 Pupd = jo @ P #? Legg til randome tall her også sånn som i forrige øving? Tipper kanskje
 
-                # calculate NIS, can use S_cho_factors
+                # calculate     , can use S_cho_factors
                 # TODO
                 NIS = v.T @ la.cho_solve(S_cho_factors, v)
 
@@ -467,7 +467,7 @@ class EKFSLAM:
         else:  # All measurements are new landmarks,
             a = np.full(z.shape[0], -1)
             z = z.flatten()
-            NIS = 1 # TODO: beware this one, you can change the value to for instance 1
+            NIS = 0 # TODO: beware this one, you can change the value to for instance 1
             etaupd = eta
             Pupd = P
 
