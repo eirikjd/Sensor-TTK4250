@@ -137,7 +137,7 @@ class EKFSLAM:
         # cov matrix layout:
         # [[P_xx, P_xm],
         # [P_mx, P_mm]]
-        P[:3, :3] = Fx @ P[:3, :3] @ Fx.T  + self.Q
+        P[:3, :3] = Fx @ P[:3, :3] @ Fx.T  + Fu @ self.Q @ Fu.T
         P[:3, 3:] = Fx @ P[:3, 3:]
         P[3:, :3] = P[:3, 3:].T
 
@@ -441,7 +441,7 @@ class EKFSLAM:
                 # Kalman mean update
                 S_cho_factors = la.cho_factor(Sa) # Optional, used in places for S^-1, see scipy.linalg.cho_factor and scipy.linalg.cho_solve
                 # TODO, Kalman gain, can use S_cho_factors
-                W = P @ Ha.T @ la.cho_solve(S_cho_factors, np.ones(len(Sa)))
+                W = P @ Ha.T @ la.inv(Sa) #(S_cho_factors, np.ones(len(Sa)))
                 # TODO, Kalman update
                 etaupd = eta + W @ v
 
