@@ -247,13 +247,14 @@ class EKFSLAM:
 
         # proposed way is to go through landmarks one by one
         jac_z_cb = -np.eye(2, 3)  # preallocate and update this for some speed gain if looping
-        for i in range(numM):  # But this whole loop can be vectorized
+        I2 = np.eye(2)
+        for i in range(numM):  # But this hole loop can be vectorized
             ind = 2 * i # starting postion of the ith landmark into H
             inds = slice(ind, ind + 2)  # the inds slice for the ith landmark into H
-
-            # TODO: Set H or Hx and Hm here
-            Hx[inds,:] = -1 * np.array([[*(delta_m[:,i].T / zr[i]), 0], [*(delta_m[:,i].T / (zr[i] ** 2)), 1]])
-            Hm[inds,inds] = (1 / zr[i] ** 2) * np.array([[*(zr[i] * delta_m[:,i].T)], [*delta_m[:,i].T @ Rpihalf]])
+            jac_z_cb[:, 2] = Rpihalf @ delta_m[:, i]
+            Hx[inds,:][0, :] = (delta_m[:, i].T / zr[i]) @ jac_z_cb
+            Hx[inds,:][1, :] = (delta_m[:, i].T @ Rpihalf.T / (zr[i] ** 2)) @ jac_z_cb
+            Hm[inds,inds] = Hx[inds, 0:2]
 
         # TODO: You can set some assertions here to make sure that some of the structure in H is correct
         return H
@@ -295,25 +296,21 @@ class EKFSLAM:
             ind = 2 * j
             inds = slice(ind, ind + 2)
             zj = z[inds]
+            zj_cart = zj[0] * np.array([np.cos(zj[1]), np.sin(zj[1])])
 
-            # TODO, rotmat in Gz
-            rot = rotmat2d(zj[1] + eta[2])
-            lmnew[inds] = eta[:2] + sensor_offset_world * zj[0] #? studass
-            # x = range + cos(bearing + self.vinkel), y = x = range + sin(bearing + self.vinkel)?
+            rot = rotmat2d(zj[1] + eta[2])# TODO, rotmat in Gz
+            lmnew[inds] = eta[:2] + rotmat2d(eta[2]) @ zj_cart + sensor_offset_world# TODO, calculate position of new landmark in world frame
 
-            # TODO
-            Gx[inds, :2] = I2
-            Gx[inds, 2] = zj[0] * rot[:, 1] + sensor_offset_world_der
+            Gx[inds, :2] = I2 # TODO
+            Gx[inds, 2] = zj[0] * rot[:, 1] + sensor_offset_world_der# TODO
 
-            # TODO
-            Gz = rot @ np.diag([1, zj[0]])
+            Gz = rot @ np.diag([1, zj[0]])# TODO
 
-            # TODO, Gz * R * Gz^T, transform measurement covariance from polar to cartesian coordinates
-            Rall[inds, inds] = Gz @ self.R @ Gz.T
+            Rall[inds, inds] = Gz @ self.R @ Gz.T # TODO, Gz * R * Gz^T, transform measurement covariance from polar to cartesian coordinates
 
         assert len(lmnew) % 2 == 0, "SLAM.add_landmark: lmnew not even length"
         # TODO, append new landmarks to state vector
-        etaadded = np.concatenate([eta[:], lmnew]) #? State eller pose vector?
+        etaadded = np.concatenate([eta[:], lmnew])
         # TODO, block diagonal of P_new, see problem text in 1g) in graded assignment 3
         Padded = la.block_diag(P, Gx @ P[:3, :3] @ Gx.T + Rall.T)  #? Ikke transposed på den siste Gx her, ref øvingsteksten
         # TODO, top right corner of P_new
