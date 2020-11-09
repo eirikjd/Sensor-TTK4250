@@ -322,7 +322,7 @@ class EKFSLAM:
         # TODO, append new landmarks to state vector
         etaadded = np.concatenate([eta[:], lmnew])
         # TODO, block diagonal of P_new, see problem text in 1g) in graded assignment 3
-        Padded = la.block_diag(P, Gx @ P[:3, :3] @ Gx.T + Rall.T)  #? Ikke transposed på den siste Gx her, ref øvingsteksten
+        Padded = la.block_diag(P, Gx @ P[:3, :3] @ Gx.T + Rall)  #? Ikke transposed på den siste Gx her, ref øvingsteksten
         # TODO, top right corner of P_new
         Padded[:n, n:] = P[:, :3] @ Gx.T #? Har endra index her for å få top right
         # TODO, transpose of above. Should yield the same as calcualion, but this enforces symmetry and should be cheaper
