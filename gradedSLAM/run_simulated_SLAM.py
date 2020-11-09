@@ -122,7 +122,7 @@ CInorm = np.zeros((K, 2))
 NEESes = np.zeros((K, 3))
 
 # For consistency testing
-alpha = 0.05
+alpha = 0.95
 
 # init
 eta_pred[0] = poseGT[0]  # we start at the correct position for reference
@@ -131,13 +131,13 @@ P_pred[0] = np.zeros((3, 3))  # we also say that we are 100% sure about that
 # %% Set up plotting
 # plotting
 
-doAssoPlot = True
+doAssoPlot = False
 playMovie = False
 if doAssoPlot:
     figAsso, axAsso = plt.subplots(num=1, clear=True)
 
 # %% Run simulation
-N = 10
+N = 100
 
 print("starting sim (" + str(N) + " iterations)")
 
