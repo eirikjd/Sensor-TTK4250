@@ -96,8 +96,8 @@ K = len(z)
 M = len(landmarks)
 
 # %% Initilize
-Q = np.diag([1,1,0.12])*1e-3
-R = np.diag([0.08**2, 0.02**2])
+Q = np.diag([10,10,0.12])*1e-3
+R = np.diag([0.06**2, 0.02**2])
 
 doAsso = True
 
@@ -137,7 +137,7 @@ if doAssoPlot:
     figAsso, axAsso = plt.subplots(num=1, clear=True)
 
 # %% Run simulation
-N = 100
+N = K
 
 print("starting sim (" + str(N) + " iterations)")
 
@@ -190,6 +190,9 @@ lmk_est_final = lmk_est[N - 1]
 np.set_printoptions(precision=4, linewidth=100)
 
 # %% Plotting of results
+plot_save_path = "./plots/simulated/"
+save_plots : bool = True
+
 mins = np.amin(landmarks, axis=0)
 maxs = np.amax(landmarks, axis=0)
 
@@ -216,6 +219,9 @@ ax2.plot(*ellipse(pose_est[-1, :2], P_hat[N - 1][:2, :2], 5, 200).T, c="g")
 ax2.set(title="results", xlim=(mins[0], maxs[0]), ylim=(mins[1], maxs[1]))
 ax2.axis("equal")
 ax2.grid()
+if save_plots:
+    plt.savefig(plot_save_path + "traj_sim.pdf", format="pdf")
+
 
 # %% Consistency
 
@@ -228,6 +234,9 @@ ax3.plot(CInorm[:N,1], '--')
 ax3.plot(NISnorm[:N], lw=0.5)
 
 ax3.set_title(f'NIS, {insideCI.mean()*100}% inside CI')
+if save_plots:
+    plt.savefig(plot_save_path + "NIS_sim.pdf", format="pdf")
+
 
 # NEES
 
@@ -248,6 +257,8 @@ for ax, tag, NEES, df in zip(ax4, tags, NEESes.T, dfs):
     print(f"ANEES {tag}: {NEES.mean()}")
 
 fig4.tight_layout()
+if save_plots:
+    plt.savefig(plot_save_path + "NEES_sim.pdf", format="pdf")
 
 # %% RMSE
 
@@ -268,6 +279,9 @@ for ax, err, tag, ylabel, scaling in zip(ax5, errs, tags[1:], ylabels, scalings)
     ax.grid()
 
 fig5.tight_layout()
+if save_plots:
+    plt.savefig(plot_save_path + "RMSE_sim.pdf", format="pdf")
+
 
 # %% Movie time
 
