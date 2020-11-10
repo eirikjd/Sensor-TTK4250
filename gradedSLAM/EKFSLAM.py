@@ -220,14 +220,14 @@ class EKFSLAM:
 
         numM = m.shape[1]
 
-        Rot = rotmat2d(-x[2])
+        Rot = rotmat2d(x[2])
 
         # TODO, relative position of landmark to robot in world frame. m - rho that appears in (11.15) and (11.16)
-        delta_m = m - x[:2].reshape(2,1) - (rotmat2d(x[2]) @ self.sensor_offset).reshape(2,1)
-        delta_m_plain = m - x[:2].reshape(2,1)
+        delta_m = m - x[:2].reshape(2,1)
 
         # TODO, (2, #measurements), each measured position in cartesian coordinates like
-        zc = [Rot @ mi for mi in delta_m.T]
+        zc = delta_m - Rot@self.sensor_offset.reshape((2,1))
+        # zc = [Rot @ mi for mi in delta_m.T]
         # [x coordinates;
         #  y coordinates]
 
@@ -256,15 +256,11 @@ class EKFSLAM:
         for i in range(numM):  # But this hole loop can be vectorized
             ind = 2 * i # starting postion of the ith landmark into H
             inds = slice(ind, ind + 2)  # the inds slice for the ith landmark into H
-            jac_z_cb[:2, :2] = -I2
-            jac_z_cb[:, 2] = -Rpihalf @ delta_m_plain[:,i] #delta_m[:, i]
-            jac_z_cb[0,:] = (delta_m[:, i].T / zr[i]) @ jac_z_cb
-            jac_z_cb[1,:] = (delta_m[:, i].T @ Rpihalf.T / (zr[i] ** 2)) @ jac_z_cb
-            Hx[inds,:] = jac_z_cb
-            # jac_z_cb[:, 2] = -Rpihalf @ delta_m[:, i]
-            # Hx[inds,:][0, :] = (delta_m[:, i].T / zr[i]) @ jac_z_cb
-            # Hx[inds,:][1, :] = (delta_m[:, i].T @ Rpihalf.T / (zr[i] ** 2)) @ jac_z_cb
-            Hm[inds,inds] = -Hx[inds, 0:2]
+
+            jac_z_cb[:, 2] = -Rpihalf @ delta_m[:,i]
+            Hx[inds,:][0,:] = (zc[:, i].T / zr[i]) @ jac_z_cb
+            Hx[inds,:][1,:] = (zc[:, i].T @ Rpihalf.T / (zr[i] ** 2)) @ jac_z_cb
+            Hm[inds,inds] = -Hx[inds,:2]
 
         # TODO: You can set some assertions here to make sure that some of the structure in H is correct
         return H
@@ -306,6 +302,7 @@ class EKFSLAM:
             ind = 2 * j
             inds = slice(ind, ind + 2)
             zj = z[inds]
+
             zj_cart = zj[0] * np.array([np.cos(zj[1]), np.sin(zj[1])])
 
             rot = rotmat2d(zj[1] + eta[2])# TODO, rotmat in Gz
@@ -320,7 +317,7 @@ class EKFSLAM:
 
         assert len(lmnew) % 2 == 0, "SLAM.add_landmark: lmnew not even length"
         # TODO, append new landmarks to state vector
-        etaadded = np.concatenate([eta[:], lmnew])
+        etaadded = np.append(eta, lmnew)
         # TODO, block diagonal of P_new, see problem text in 1g) in graded assignment 3
         Padded = la.block_diag(P, Gx @ P[:3, :3] @ Gx.T + Rall)  #? Ikke transposed på den siste Gx her, ref øvingsteksten
         # TODO, top right corner of P_new
@@ -451,7 +448,7 @@ class EKFSLAM:
                 # Kalman mean update
                 S_cho_factors = la.cho_factor(Sa) # Optional, used in places for S^-1, see scipy.linalg.cho_factor and scipy.linalg.cho_solve
                 # TODO, Kalman gain, can use S_cho_factors
-                W = P @ Ha.T @ la.inv(Sa) #(S_cho_factors, np.ones(len(Sa)))
+                W = la.cho_solve(S_cho_factors, Ha @ P.T).T
                 # TODO, Kalman update
                 etaupd = eta + W @ v
 
@@ -486,7 +483,7 @@ class EKFSLAM:
                 z_new_inds[::2] = is_new_lmk
                 z_new_inds[1::2] = is_new_lmk
                 z_new = z[z_new_inds]
-                etaupd, Pupd = self.add_landmarks(eta, P, z_new)
+                etaupd, Pupd = self.add_landmarks(etaupd, Pupd, z_new)
 
         assert np.allclose(Pupd, Pupd.T), "EKFSLAM.update: Pupd must be symmetric"
         assert np.all(np.linalg.eigvals(Pupd) >= 0), "EKFSLAM.update: Pupd must be PSD"

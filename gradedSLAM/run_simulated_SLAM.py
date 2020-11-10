@@ -120,6 +120,7 @@ NISnorm = np.zeros(K)
 CI = np.zeros((K, 2))
 CInorm = np.zeros((K, 2))
 NEESes = np.zeros((K, 3))
+total_num_asso = 0
 
 # For consistency testing
 alpha = 0.95
@@ -153,6 +154,7 @@ for k, z_k in tqdm(enumerate(z[:N])):
     ), "dimensions of mean and covariance do not match"
 
     num_asso = np.count_nonzero(a[k] > -1)
+    total_num_asso += num_asso
 
     CI[k] = chi2.interval(alpha, 2 * num_asso)
 
@@ -236,6 +238,14 @@ ax3.plot(NISnorm[:N], lw=0.5)
 ax3.set_title(f'NIS, {insideCI.mean()*100}% inside CI')
 if save_plots:
     plt.savefig(plot_save_path + "NIS_sim.pdf", format="pdf")
+
+
+dofs = 2 * total_num_asso
+
+CI_ANIS = np.array(chi2.interval(alpha, dofs)) / N
+ANIS = NISnorm.mean()
+print(f"ANIS = {ANIS:.2f} with CI = [{CI_ANIS[0]:.2f}, {CI_ANIS[1]:.2f}]")
+
 
 
 # NEES

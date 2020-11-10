@@ -106,14 +106,14 @@ b = 0.5  # laser distance to the left of center
 
 car = Car(L, H, a, b)
 
-sigmas = np.array([1, 1, 0.12]) * 1e-3
+sigmas = np.array([10, 10, 0.10]) * 1e-3
 CorrCoeff = np.array([[1, 0, 0], [0, 1, 0.9], [0, 0.9, 1]])
 Q = np.diag(sigmas) @ CorrCoeff @ np.diag(sigmas)
 
 R = np.diag([0.08**2, 0.02**2])
 
 JCBBalphas = np.array(
-     [1e-4, 1e-6]
+     [1e-5, 1e-8]
 )
 sensorOffset = np.array([car.a + car.L, car.b])
 doAsso = True
@@ -130,6 +130,7 @@ NIS = np.zeros(mK)
 NISnorm = np.zeros(mK)
 CI = np.zeros((mK, 2))
 CInorm = np.zeros((mK, 2))
+total_num_asso = 0
 
 # Initialize state
 eta = np.array([Lo_m[0], La_m[1], 36 * np.pi / 180]) # you might want to tweak these for a good reference
@@ -140,7 +141,7 @@ mk = mk_first
 t = timeOdo[0]
 
 # %%  run
-N = 3000
+N = 10000
 
 doPlot = False
 
@@ -161,7 +162,7 @@ if do_raw_prediction:  # TODO: further processing such as plotting
 
     for k in range(min(N, K - 1)):
         odos[k + 1] = odometry(speed[k + 1], steering[k + 1], 0.025, car)
-        odox[k + 1], _ = slam.predict(odox[k], P, odos[k + 1])
+        odox[k + 1], _ = slam.predict(odox[k], P.copy(), odos[k + 1])
 
 for k in tqdm(range(N)):
     if mk < mK - 1 and timeLsr[mk] <= timeOdo[k + 1]:
@@ -182,6 +183,7 @@ for k in tqdm(range(N)):
         eta, P, NIS[mk], a[mk] = slam.update(eta, P, z)# TODO update
 
         num_asso = np.count_nonzero(a[mk] > -1)
+        total_num_asso += num_asso
 
         if num_asso > 0:
             NISnorm[mk] = NIS[mk] / (2 * num_asso)
@@ -228,6 +230,12 @@ for k in tqdm(range(N)):
 
 # NIS
 insideCI = (CInorm[:mk, 0] <= NISnorm[:mk]) * (NISnorm[:mk] <= CInorm[:mk, 1])
+
+dofs = 2 * total_num_asso
+
+CI_ANIS = np.array(chi2.interval(alpha, dofs)) / N
+ANIS = NISnorm.mean()
+print(f"ANIS = {ANIS:.2f} with CI = [{CI_ANIS[0]:.2f}, {CI_ANIS[1]:.2f}]")
 
 fig3, ax3 = plt.subplots(num=3, clear=True)
 ax3.plot(CInorm[:mk, 0], "--")
