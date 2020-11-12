@@ -21,6 +21,7 @@ from matplotlib import animation
 from plotting import ellipse
 from vp_utils import detectTrees, odometry, Car
 from utils import rotmat2d
+from scipy import linalg as la
 
 # %% plot config check and style setup
 
@@ -106,14 +107,14 @@ b = 0.5  # laser distance to the left of center
 
 car = Car(L, H, a, b)
 
-sigmas = np.array([10, 10, 0.10]) * 1e-3
+sigmas = np.array([0.2, 0.2, 0.03]) * 1e-3
 CorrCoeff = np.array([[1, 0, 0], [0, 1, 0.9], [0, 0.9, 1]])
 Q = np.diag(sigmas) @ CorrCoeff @ np.diag(sigmas)
 
 R = np.diag([0.08**2, 0.02**2])
 
 JCBBalphas = np.array(
-     [1e-5, 1e-8]
+     [1e-4, 1e-6]
 )
 sensorOffset = np.array([car.a + car.L, car.b])
 doAsso = True
@@ -130,7 +131,9 @@ NIS = np.zeros(mK)
 NISnorm = np.zeros(mK)
 CI = np.zeros((mK, 2))
 CInorm = np.zeros((mK, 2))
+GNSS_error = np.zeros((Kgps))
 total_num_asso = 0
+GNSSk = 0
 
 # Initialize state
 eta = np.array([Lo_m[0], La_m[1], 36 * np.pi / 180]) # you might want to tweak these for a good reference
@@ -141,11 +144,13 @@ mk = mk_first
 t = timeOdo[0]
 
 # %%  run
-N = 10000
+N = K
 
 doPlot = False
-
+savePlots = True
 lh_pose = None
+
+plot_save_path = "./plots/real/"
 
 if doPlot:
     fig, ax = plt.subplots(num=1, clear=True)
@@ -218,6 +223,11 @@ for k in tqdm(range(N)):
             plt.draw()
             plt.pause(0.00001)
 
+        if GNSSk < Kgps - 1 and timeGps[GNSSk] <= timeLsr[mk + 1]:
+            # GNSS error
+            GNSS_error[GNSSk]  = la.norm(np.array([Lo_m[GNSSk], La_m[GNSSk]]) - xupd[mk,:2])
+            GNSSk += 1
+
         mk += 1
 
     if k < K - 1:
@@ -225,6 +235,10 @@ for k in tqdm(range(N)):
         t = timeOdo[k + 1]
         odo = odometry(speed[k + 1], steering[k + 1], dt, car)
         eta, P = slam.predict(eta, P, odo)
+
+
+# fig3, fig3 =
+
 
 # %% Consistency
 
@@ -237,17 +251,19 @@ CI_ANIS = np.array(chi2.interval(alpha, dofs)) / N
 ANIS = NISnorm.mean()
 print(f"ANIS = {ANIS:.2f} with CI = [{CI_ANIS[0]:.2f}, {CI_ANIS[1]:.2f}]")
 
-fig3, ax3 = plt.subplots(num=3, clear=True)
+fig3, ax3 = plt.subplots(num=3, clear=True, figsize=(10, 10))
 ax3.plot(CInorm[:mk, 0], "--")
 ax3.plot(CInorm[:mk, 1], "--")
 ax3.plot(NISnorm[:mk], lw=0.5)
 
 ax3.set_title(f"NIS, {insideCI.mean()*100:.2f}% inside CI")
+if savePlots:
+    plt.savefig(plot_save_path + "NIS.pdf", format='pdf')
 
 # %% slam
 
 if do_raw_prediction:
-    fig5, ax5 = plt.subplots(num=5, clear=True)
+    fig5, ax5 = plt.subplots(num=5, clear=True, figsize=(10, 10))
     ax5.scatter(
         Lo_m[timeGps < timeOdo[N - 1]],
         La_m[timeGps < timeOdo[N - 1]],
@@ -259,14 +275,31 @@ if do_raw_prediction:
     ax5.grid()
     ax5.set_title("GPS vs odometry integration")
     ax5.legend()
+    if savePlots:
+        plt.savefig(plot_save_path + "GPS_vs_odo_integraation.pdf", format='pdf')
 
 # %%
-fig6, ax6 = plt.subplots(num=6, clear=True)
+fig6, ax6 = plt.subplots(num=6, clear=True, figsize=(10, 10))
 ax6.scatter(*eta[3:].reshape(-1, 2).T, color="r", marker="x")
 ax6.plot(*xupd[mk_first:mk, :2].T)
 ax6.set(
     title=f"Steps {k}, laser scans {mk-1}, landmarks {len(eta[3:])//2},\nmeasurements {z.shape[0]}, num new = {np.sum(a[mk] == -1)}"
 )
+
+# %%
+GNSS_error_avg = np.mean(GNSS_error)
+
+print(f"Average GNSS error: {GNSS_error_avg:.2f} meters")
+
+fig7,ax7 = plt.subplots(num=7, clear=True, figsize=(10, 10))
+ax7.plot(timeGps[:GNSSk], GNSS_error[:GNSSk])
+ax7.set(
+    title="GNSS deviation from position estimates"
+)
+if savePlots:
+    plt.savefig(plot_save_path + "GNSS_error.pdf", format='pdf')
 plt.show()
+
+
 
 # %%

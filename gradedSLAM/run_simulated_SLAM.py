@@ -133,12 +133,12 @@ P_pred[0] = np.zeros((3, 3))  # we also say that we are 100% sure about that
 # plotting
 
 doAssoPlot = False
-playMovie = False
+playMovie = True
 if doAssoPlot:
     figAsso, axAsso = plt.subplots(num=1, clear=True)
 
 # %% Run simulation
-N = K
+N = 200
 
 print("starting sim (" + str(N) + " iterations)")
 
@@ -193,7 +193,7 @@ np.set_printoptions(precision=4, linewidth=100)
 
 # %% Plotting of results
 plot_save_path = "./plots/simulated/"
-save_plots : bool = True
+save_plots : bool = False
 
 mins = np.amin(landmarks, axis=0)
 maxs = np.amax(landmarks, axis=0)
